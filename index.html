@@ -1,84 +1,186 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Book Preorder</title>
+
+  <!-- Tailwind for quick, consistent styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom styles -->
   <link rel="stylesheet" href="style.css">
 </head>
-<body>
-  <div class="container">
-    <!-- LEFT: Book List -->
-    <aside class="book-list">
-      <h2>📚 Pre-order your next read with us</h2>
+<body class="bg-slate-50 text-slate-800">
 
-      <!-- Filters -->
-      <div class="filters">
-        <input type="text" id="searchBox" placeholder="Search books...">
-        <div>
-          <label><input type="radio" name="filter" value="title" checked> Title</label>
-          <label><input type="radio" name="filter" value="author"> Author</label>
-          <label><input type="radio" name="filter" value="genre"> Genre</label>
+  <div class="max-w-6xl mx-auto px-4 py-6">
+
+    <!-- Header -->
+    <header class="mb-6">
+      <h1 class="text-2xl md:text-3xl font-bold text-sky-700">📚 Pre-order your next read</h1>
+      <p class="text-sm text-slate-600 mt-1">Browse, add to cart, confirm, then submit payment confirmation.</p>
+    </header>
+
+    <!-- BOOK LIST (always on top) -->
+    <section id="booksSection" class="mb-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+        <!-- Search + filter -->
+        <div class="flex-1">
+          <input id="searchBox" type="search" placeholder="Search books..." class="w-full md:w-80 p-2 border rounded shadow-sm" />
         </div>
-        <select id="filterDropdown" style="display:none;"></select>
+
+        <div class="flex items-center gap-4">
+          <div class="text-sm">
+            <label class="mr-2"><input type="radio" name="filterType" value="title" checked> Title</label>
+            <label class="mr-2"><input type="radio" name="filterType" value="author"> Author</label>
+            <label><input type="radio" name="filterType" value="genre"> Genre</label>
+          </div>
+          <select id="filterDropdown" class="hidden p-2 border rounded shadow-sm text-sm"></select>
+        </div>
       </div>
 
-      <!-- Books will load here -->
-      <div id="bookList"></div>
-    </aside>
+      <!-- Grid of book cards -->
+      <div id="bookList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+    </section>
 
-    <!-- RIGHT: Order / Payment -->
-    <main class="order-section">
-      <h2>🛒 Your Order</h2>
-      <div id="cart"></div>
-      <div id="orderTotal"></div>
-      <button id="confirmOrderBtn" disabled>Confirm Order</button>
-
-      <!-- Disclaimer + Payment -->
-      <div id="disclaimerPayment" class="hidden">
-        <div class="card warning">
-          <h3>⚠️ Disclaimer</h3>
-          <ul>
-            <li>📍 Pick-up only option available</li>
-            <li>⚡ For faster transaction, kindly pay before pickup</li>
-          </ul>
+    <!-- ORDER SECTION (below booklist) -->
+    <section id="orderSection" class="mb-12">
+      <div class="bg-white p-4 rounded-lg shadow">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold">🛒 Order Summary</h2>
+          <button id="clearCartBtn" class="text-sm text-rose-600 hover:underline" title="Clear cart">Clear</button>
         </div>
 
-        <div class="card payment">
-          <h3>💳 Payment Options</h3>
-          <p><strong>GCash / PayMaya</strong></p>
-          <p><strong>Account Name:</strong> Cherel</p>
-          <p><strong>Account Number:</strong> 09126456792</p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm table-fixed">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="p-2 w-12">#</th>
+                <th class="p-2 text-left">Title</th>
+                <th class="p-2 text-left">Author</th>
+                <th class="p-2 w-28">Qty</th>
+                <th class="p-2 w-28">Price</th>
+                <th class="p-2 w-12">Remove</th>
+              </tr>
+            </thead>
+            <tbody id="cartTbody"></tbody>
+          </table>
         </div>
 
-        <!-- Customer Info -->
-        <form id="orderForm">
-          <h3>👤 Customer Information</h3>
-          <label>Full Name:<input type="text" name="fullName" required></label>
-          <label>Email Address:<input type="email" name="email" required></label>
-          <label>Contact Number:<input type="text" name="contact" required></label>
-          <label>Facebook Name:<input type="text" name="fbname"></label>
-          <label>Upload Payment Confirmation:<input type="file" name="paymentFile"></label>
+        <div class="flex items-center justify-between mt-4">
+          <div id="cartEmptyNotice" class="text-sm text-slate-500">Your cart is empty.</div>
+          <div class="text-lg font-bold text-sky-700" id="cartTotal">Total: ₱0.00</div>
+        </div>
 
-          <label>Pickup Location:
-            <select id="pickupLocation" name="pickup" required>
-              <option value="">Select Location</option>
-              <option value="Sacred Heart">Feast Sacred Heart - Monday</option>
-              <option value="IT Park">Feast IT Park - Saturday</option>
-              <option value="Golden Prince">Feast Golden Prince - Saturday</option>
-              <option value="Ayala">Feast Ayala - Sunday</option>
-            </select>
-          </label>
+        <div class="mt-4">
+          <button id="confirmOrderBtn" class="bg-sky-600 text-white px-4 py-2 rounded disabled:opacity-50" disabled>Confirm Order</button>
+        </div>
+      </div>
 
-          <label>Pickup Date:
-            <input type="text" id="pickupDate" name="pickupDate" readonly>
-          </label>
+      <!-- Hidden details revealed after Confirm Order -->
+      <div id="checkoutDetails" class="mt-6 hidden">
+        <div class="grid gap-4 md:grid-cols-2">
+          <!-- Disclaimer -->
+          <div class="card-warning p-4 rounded">
+            <div class="flex items-start gap-3">
+              <div class="text-2xl">⚠️</div>
+              <div>
+                <h3 class="font-semibold mb-1">Disclaimer</h3>
+                <ul class="text-sm text-slate-700 list-disc pl-5">
+                  <li>Pick-up only — we do not ship.</li>
+                  <li>For faster transaction, please pay first and upload the payment confirmation.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
 
-          <button type="submit">Submit Order</button>
+          <!-- Payment -->
+          <div class="card-payment p-4 rounded">
+            <div class="flex items-start gap-3">
+              <div class="text-2xl">💳</div>
+              <div>
+                <h3 class="font-semibold mb-1">Payment</h3>
+                <p class="text-sm text-slate-700"><strong>GCash / PayMaya</strong></p>
+                <p class="text-sm text-slate-700"><strong>Account Name:</strong> Cherel</p>
+                <p class="text-sm text-slate-700"><strong>Account Number:</strong> 09126456792</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customer form -->
+        <form id="checkoutForm" class="mt-4 bg-white p-4 rounded shadow">
+          <h3 class="text-lg font-semibold mb-3">Customer Information</h3>
+
+          <div class="grid gap-3 md:grid-cols-2">
+            <label class="block">
+              <span class="text-sm">Full Name</span>
+              <input id="fullName" name="fullName" type="text" class="mt-1 p-2 border rounded w-full" required>
+            </label>
+
+            <label class="block">
+              <span class="text-sm">Email</span>
+              <input id="email" name="email" type="email" class="mt-1 p-2 border rounded w-full" required>
+            </label>
+
+            <label class="block">
+              <span class="text-sm">Contact Number</span>
+              <input id="contactNumber" name="contactNumber" type="text" class="mt-1 p-2 border rounded w-full" required>
+            </label>
+
+            <label class="block">
+              <span class="text-sm">Facebook Name</span>
+              <input id="fbName" name="fbName" type="text" class="mt-1 p-2 border rounded w-full">
+            </label>
+          </div>
+
+          <div class="grid gap-3 md:grid-cols-2 mt-3">
+            <label>
+              <span class="text-sm">Upload payment confirmation</span>
+              <input id="paymentFile" type="file" class="mt-1 w-full">
+            </label>
+
+            <label>
+              <span class="text-sm">Pick-up Location</span>
+              <select id="pickupLocation" class="mt-1 p-2 border rounded w-full" required>
+                <option value="">Choose location</option>
+                <option value="Feast Sacred Heart">Feast Sacred Heart — Monday</option>
+                <option value="Feast IT Park">Feast IT Park — Saturday</option>
+                <option value="Feast Golden Prince">Feast Golden Prince — Saturday</option>
+                <option value="Feast Ayala">Feast Ayala — Sunday</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="mt-3 grid gap-3 md:grid-cols-2">
+            <label>
+              <span class="text-sm">Pick-up Date (next available)</span>
+              <input id="pickupDateDisplay" type="text" readonly class="mt-1 p-2 border rounded w-full bg-slate-50" />
+              <input id="pickupDate" type="hidden" />
+            </label>
+
+            <div>
+              <span class="text-sm block mb-1">Order Notes (optional)</span>
+              <textarea id="orderNotes" rows="2" class="p-2 border rounded w-full"></textarea>
+            </div>
+          </div>
+
+          <div class="mt-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div class="text-sm text-slate-700">
+              By submitting you confirm payment (if uploaded) and agree to pick up on the selected date.
+            </div>
+            <div class="flex gap-2">
+              <button id="submitOrderBtn" type="button" class="bg-green-600 text-white px-4 py-2 rounded">Submit Order</button>
+              <button id="cancelCheckoutBtn" type="button" class="bg-rose-500 text-white px-4 py-2 rounded">Cancel</button>
+            </div>
+          </div>
         </form>
       </div>
-    </main>
+    </section>
   </div>
+
+  <!-- Floating (mobile) go-to-cart -->
+  <button id="goToCartBtn" class="fixed bottom-6 right-6 bg-sky-600 text-white px-4 py-3 rounded-full shadow-lg md:hidden">🛒 Cart</button>
 
   <script src="script.js"></script>
 </body>
