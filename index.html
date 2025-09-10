@@ -1,92 +1,85 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Preorder</title>
+<body>
+  <div class="container">
 
-  <!-- ✅ Tailwind CSS CDN for styling -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <link rel="stylesheet" href="style.css">
-  <script defer src="script.js"></script>
-</head>
-<body class="bg-gray-100 font-sans">
-
-  <div class="flex flex-col md:flex-row h-screen">
-
-    <!-- LEFT PANEL: Books -->
-    <div class="order-1 md:order-1 w-full md:w-1/3 p-4 bg-white shadow-lg overflow-y-auto">
-      <h2 class="text-2xl font-bold mb-3 text-blue-700">📚 Pre-order your next read</h2>
+    <!-- Books Section -->
+    <section class="books-panel">
+      <h2>📚 Pre-order your next read with us</h2>
 
       <!-- Filters -->
-      <div class="mb-4 text-sm">
-        <label class="mr-3"><input type="radio" name="filterType" value="title" checked> Title</label>
-        <label class="mr-3"><input type="radio" name="filterType" value="author"> Author</label>
-        <label><input type="radio" name="filterType" value="genre"> Genre</label>
+      <div class="filters">
+        <label><input type="radio" name="filter" value="title" checked> Title</label>
+        <label><input type="radio" name="filter" value="author"> Author</label>
+        <label><input type="radio" name="filter" value="genre"> Genre</label>
 
-        <div id="filterInputWrapper" class="mt-2">
-          <input type="text" id="filterInput" placeholder="Search by title..." class="w-full p-2 border rounded">
-        </div>
+        <select id="filterDropdown" style="display:none;"></select>
       </div>
 
-      <!-- Book List -->
-      <div id="bookList" class="space-y-4"></div>
-    </div>
+      <div id="bookList"></div>
+    </section>
 
-    <!-- RIGHT PANEL: Order/Payment -->
-    <div id="orderForm" class="order-2 md:order-2 w-full md:w-2/3 p-6 bg-gray-50 overflow-y-auto">
-      <h2 class="text-lg font-semibold mb-2">⚠️ Disclaimer</h2>
-      <ul class="list-disc ml-6 mb-4 text-sm text-gray-700">
-        <li>Pick-up only option</li>
-        <li>For faster transaction do payment first</li>
-      </ul>
+    <!-- Order Section -->
+    <section class="order-panel" id="orderPanel">
+      <h2>🛒 Order Summary</h2>
+      <table class="cart-table" id="cartTable">
+        <thead>
+          <tr>
+            <th>Item No.</th>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Qty</th>
+            <th>Price</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
 
-      <h2 class="text-lg font-semibold mb-2">💳 Payment</h2>
-      <p class="mb-4 text-sm bg-white p-3 rounded shadow">
-        <b>GCash / Paymaya</b><br>
-        Account Name: <b>Cherel</b><br>
-        Account Number: <b>09126456792</b>
-      </p>
+      <div id="orderTotal"><strong>Total: ₱0.00</strong></div>
 
-      <h2 class="text-lg font-semibold mb-2">🛒 Your Order</h2>
-      <div id="cartItems" class="mb-4 text-sm bg-white p-3 rounded shadow"></div>
-      <p id="cartTotal" class="font-semibold text-blue-600"></p>
+      <button id="confirmOrderBtn">Confirm Order</button>
 
-      <h2 class="text-lg font-semibold mt-6 mb-2">👤 Customer Information</h2>
-      <form id="orderSubmitForm" class="space-y-3 bg-white p-4 rounded shadow">
-        <input type="text" id="fullName" placeholder="Full Name" class="w-full p-2 border rounded" required>
-        <input type="email" id="email" placeholder="Email Address" class="w-full p-2 border rounded" required>
-        <input type="text" id="contactNumber" placeholder="Contact Number" class="w-full p-2 border rounded" required>
-        <input type="text" id="fbName" placeholder="FB Name" class="w-full p-2 border rounded" required>
-        <label class="block">Confirmation of Payment:
-          <input type="file" id="paymentFile" class="mt-1 w-full text-sm">
-        </label>
+      <!-- Hidden until order confirm -->
+      <div id="extraDetails" style="display:none; margin-top:1rem;">
+        <div class="disclaimer">
+          <p>⚠️ Disclaimer:</p>
+          <ul>
+            <li>Pick-up only option</li>
+            <li>For faster transaction, do payment first</li>
+          </ul>
+        </div>
 
-        <!-- Pickup Options -->
-        <label class="block font-semibold">Select Pick-up Location:</label>
-        <select id="pickup" class="w-full p-2 border rounded" required>
-          <option value="">-- Select --</option>
+        <h3>💳 Payment</h3>
+        <p>GCash / Paymaya</p>
+        <p><strong>Account Name:</strong> Cherel</p>
+        <p><strong>Account Number:</strong> 09126456792</p>
+
+        <h3>👤 Customer Information</h3>
+        <label>Full Name: <input type="text" id="fullName"></label>
+        <label>Email Address: <input type="email" id="email"></label>
+        <label>Contact Number: <input type="text" id="contact"></label>
+        <label>FB Name: <input type="text" id="fbName"></label>
+        <label>Payment Confirmation: <input type="file" id="paymentProof"></label>
+
+        <h3>📍 Pickup Location</h3>
+        <select id="pickupLocation">
+          <option value="">Select Location</option>
           <option value="Feast Sacred Heart">Feast Sacred Heart - Monday</option>
           <option value="Feast IT Park">Feast IT Park - Saturday</option>
           <option value="Feast Golden Prince">Feast Golden Prince - Saturday</option>
           <option value="Feast Ayala">Feast Ayala - Sunday</option>
         </select>
 
-        <label class="block font-semibold">Pick-up Date:</label>
-        <input type="date" id="pickupDate" class="w-full p-2 border rounded" required>
+        <label>Date:
+          <input type="date" id="pickupDate">
+        </label>
 
-        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded w-full">Confirm Order</button>
-      </form>
-    </div>
-
+        <button id="submitOrderBtn">Submit Order</button>
+      </div>
+    </section>
   </div>
 
-  <!-- Floating Button for Mobile -->
-  <button onclick="document.getElementById('orderForm').scrollIntoView({behavior: 'smooth'})"
-    class="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-full shadow-lg md:hidden">
+  <!-- Floating cart button (mobile only) -->
+  <button class="floating-cart-btn"
+    onclick="document.getElementById('orderPanel').scrollIntoView({behavior:'smooth'})">
     🛒 Go to Cart
   </button>
-
 </body>
-</html>
