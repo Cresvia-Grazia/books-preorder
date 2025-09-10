@@ -1,20 +1,31 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbwttBqQuHGjCWInJiM8EGzy9jU_ZuQGeLmVxttcH847BVai_dkV8ew0nvFoOKz7DYtIJg/exec"; // replace with your /exec link
+const API_URL = "https://script.google.com/macros/s/AKfycbwttBqQuHGjCWInJiM8EGzy9jU_ZuQGeLmVxttcH847BVai_dkV8ew0nvFoOKz7DYtIJg/exec"; 
 let allBooks = [];
-let orderItems = [];
+let cart = [];
 
-// Load books on page ready
+// Init
 document.addEventListener("DOMContentLoaded", () => {
   loadBooks();
 
-  document.getElementById("searchInput").addEventListener("input", (e) => {
+  document.getElementById("searchBox").addEventListener("input", (e) => {
     filterBooks(e.target.value);
   });
 
-  document.getElementById("confirmOrderBtn").addEventListener("click", showDisclaimerForm);
+  document.getElementById("confirmOrderBtn").addEventListener("click", () => {
+    document.getElementById("checkoutDetails").classList.remove("hidden");
+  });
+
+  document.getElementById("clearCartBtn").addEventListener("click", () => {
+    cart = [];
+    renderCart();
+  });
 
   document.getElementById("pickupLocation").addEventListener("change", handlePickupLocation);
 
-  document.getElementById("customerForm").addEventListener("submit", handleSubmitOrder);
+  document.getElementById("submitOrderBtn").addEventListener("click", handleSubmitOrder);
+
+  document.getElementById("cancelCheckoutBtn").addEventListener("click", () => {
+    document.getElementById("checkoutDetails").classList.add("hidden");
+  });
 });
 
 // Fetch inventory
@@ -25,60 +36,133 @@ async function loadBooks() {
     renderBooks(allBooks);
   } catch (err) {
     console.error(err);
-    document.getElementById("bookList").innerHTML = `<p style="color:red">Failed to load inventory.</p>`;
+    document.getElementById("booksSection").innerHTML = `<p class="text-red-600">Failed to load inventory.</p>`;
   }
 }
 
 // Render book cards
 function renderBooks(books) {
-  const bookList = document.getElementById("bookList");
-  bookList.innerHTML = books.map(b => `
-    <div class="book-card">
-      <img src="${b.ImageURL || 'https://via.placeholder.com/100'}" alt="${b.Title}">
-      <h3>${b.Title}</h3>
-      <p><strong>Author:</strong> ${b.Author}</p>
-      <p><strong>Genre:</strong> ${b.Genre}</p>
-      <p><strong>Price:</strong> ₱${b["Discounted Price"] || b.Price}</p>
-      <button onclick='addToOrder(${JSON.stringify(b)})'>Reserve</button>
+  const list = document.getElementById("booksSection");
+  list.innerHTML = books.map((b, idx) => `
+    <div class="bg-white p-3 rounded shadow flex flex-col">
+      <img src="${b.ImageURL || 'https://via.placeholder.com/200x180'}" alt="${b.Title}" class="book-image mb-2">
+      <h3 class="font-semibold">${b.Title}</h3>
+      <p class="text-sm text-slate-600">by ${b.Author}</p>
+      <p class="text-xs text-slate-500">${b.Genre}</p>
+      <p class="font-bold text-sky-700 mt-1">₱${b["Discounted Price"] || b.Price}</p>
+      <button onclick='addToCart(${idx})' class="mt-auto bg-sky-600 text-white px-3 py-1 rounded text-sm">Reserve</button>
     </div>
   `).join("");
 }
 
-// Add to order
-function addToOrder(book) {
-  orderItems.push({...book, qty: 1});
-  renderOrder();
+// Add to cart
+function addToCart(idx) {
+  const book = allBooks[idx];
+  const existing = cart.find(it => it.Title === book.Title);
+  if (existing) {
+    existing.qty += 1;
+  } else {
+    cart.push({ ...book, qty: 1 });
+  }
+  renderCart();
 }
 
-function renderOrder() {
-  const orderDiv = document.getElementById("orderSummary");
-  if (!orderItems.length) {
-    orderDiv.innerHTML = "<p>No items selected.</p>";
+// Render cart
+function renderCart() {
+  const tbody = document.getElementById("cartTbody");
+  const countEl = document.getElementById("cartCount");
+  const totalEl = document.getElementById("cartTotal");
+  const emptyNotice = document.getElementById("cartEmptyNotice");
+
+  tbody.innerHTML = "";
+  if (!cart.length) {
+    countEl.textContent = "0 items";
+    totalEl.textContent = "Total: ₱0.00";
+    emptyNotice.classList.remove("hidden");
     document.getElementById("confirmOrderBtn").disabled = true;
     return;
   }
 
   let total = 0;
-  orderDiv.innerHTML = orderItems.map((it, idx) => {
+  cart.forEach((it, i) => {
     const price = it["Discounted Price"] || it.Price;
     total += price * it.qty;
-    return `<p>${idx+1}. "${it.Title}" by ${it.Author} — ₱${price} x ${it.qty}</p>`;
-  }).join("") + `<hr><p><strong>Total: ₱${total}</strong></p>`;
+    tbody.innerHTML += `
+      <tr>
+        <td class="p-2">${i + 1}</td>
+        <td class="p-2">${it.Title}</td>
+        <td class="p-2">${it.Author}</td>
+        <td class="p-2"><input type="number" min="1" value="${it.qty}" class="w-16 border p-1 text-center" onchange="updateQty(${i}, this.value)" /></td>
+        <td class="p-2">₱${price * it.qty}</td>
+        <td class="p-2"><button class="text-rose-600" onclick="removeFromCart(${i})">✖</button></td>
+      </tr>
+    `;
+  });
 
+  countEl.textContent = `${cart.length} items`;
+  totalEl.textContent = `Total: ₱${total.toFixed(2)}`;
+  emptyNotice.classList.add("hidden");
   document.getElementById("confirmOrderBtn").disabled = false;
 }
 
-// Show disclaimer + form
-function showDisclaimerForm() {
-  document.getElementById("disclaimer").classList.remove("hidden");
-  document.getElementById("customerForm").classList.remove("hidden");
+function updateQty(i, qty) {
+  cart[i].qty = parseInt(qty) || 1;
+  renderCart();
 }
 
-// Handle pickup restriction
+function removeFromCart(i) {
+  cart.splice(i, 1);
+  renderCart();
+}
+
+// Calendar rendering
+function renderCalendar(allowedDay) {
+  const calendarEl = document.getElementById("calendar");
+  const hiddenIso = document.getElementById("pickupDateIso");
+  const displayInput = document.getElementById("pickupDateDisplay");
+
+  calendarEl.innerHTML = "";
+  hiddenIso.value = "";
+  displayInput.value = "";
+
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  // pad for first day alignment
+  for (let i = 0; i < monthStart.getDay(); i++) {
+    const empty = document.createElement("div");
+    calendarEl.appendChild(empty);
+  }
+
+  for (let d = 1; d <= monthEnd.getDate(); d++) {
+    const date = new Date(today.getFullYear(), today.getMonth(), d);
+    const day = date.getDay();
+    const iso = date.toISOString().split("T")[0];
+
+    const cell = document.createElement("div");
+    cell.textContent = d;
+    cell.className = "calendar-day";
+
+    if (day === allowedDay && date >= today) {
+      cell.classList.add("enabled");
+      cell.addEventListener("click", () => {
+        document.querySelectorAll(".calendar-day").forEach(c => c.classList.remove("selected"));
+        cell.classList.add("selected");
+        hiddenIso.value = iso;
+        displayInput.value = date.toDateString();
+      });
+    } else {
+      cell.classList.add("disabled");
+    }
+
+    calendarEl.appendChild(cell);
+  }
+}
+
+// Pickup location handler
 function handlePickupLocation(e) {
   const location = e.target.value;
-  const dateInput = document.getElementById("pickupDate");
-  const today = new Date();
   let allowedDay;
 
   if (location.includes("Sacred Heart")) allowedDay = 1; // Monday
@@ -86,27 +170,17 @@ function handlePickupLocation(e) {
   if (location.includes("Golden Prince")) allowedDay = 6; // Saturday
   if (location.includes("Ayala")) allowedDay = 0; // Sunday
 
-  // Find next allowed date
-  let nextDate = new Date(today);
-  nextDate.setDate(today.getDate() + ((7 + allowedDay - today.getDay()) % 7 || 7));
-
-  // Restrict input
-  dateInput.min = nextDate.toISOString().split("T")[0];
-  dateInput.value = nextDate.toISOString().split("T")[0];
-
-  // Gray out invalid days
-  dateInput.oninput = () => {
-    const chosen = new Date(dateInput.value);
-    if (chosen.getDay() !== allowedDay) {
-      alert("Invalid date for selected location. Please pick the allowed day.");
-      dateInput.value = nextDate.toISOString().split("T")[0];
-    }
-  };
+  if (allowedDay !== undefined) {
+    renderCalendar(allowedDay);
+  }
 }
 
-// Handle form submit
-async function handleSubmitOrder(e) {
-  e.preventDefault();
+// Submit order
+async function handleSubmitOrder() {
+  if (!cart.length) {
+    alert("Cart is empty!");
+    return;
+  }
 
   const fileInput = document.getElementById("paymentFile");
   let fileUrl = "";
@@ -121,9 +195,9 @@ async function handleSubmitOrder(e) {
     ContactNumber: document.getElementById("contactNumber").value,
     FBName: document.getElementById("fbName").value,
     Pickup: document.getElementById("pickupLocation").value,
-    PickupDate: document.getElementById("pickupDate").value,
-    ItemsJSON: JSON.stringify(orderItems),
-    Total: orderItems.reduce((sum, it) => sum + ((it["Discounted Price"] || it.Price) * it.qty), 0),
+    PickupDate: document.getElementById("pickupDateIso").value,
+    ItemsJSON: JSON.stringify(cart),
+    Total: cart.reduce((sum, it) => sum + ((it["Discounted Price"] || it.Price) * it.qty), 0),
     PaymentConfirmed: fileUrl
   };
 
@@ -134,7 +208,7 @@ async function handleSubmitOrder(e) {
   });
 
   const result = await res.json();
-  alert(result.success ? "Order submitted successfully!" : "Error saving order.");
+  alert(result.success ? "✅ Order submitted successfully!" : "❌ Error saving order.");
 }
 
 // Upload file to Apps Script
