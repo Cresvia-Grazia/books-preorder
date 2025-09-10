@@ -1,4 +1,4 @@
-const API_URL = "YOUR_EXEC_URL_HERE"; // replace with your Apps Script Web App URL
+const API_URL = "https://script.google.com/macros/s/AKfycbzbBOqJOnedz96QvM_dwgkSr7S9Q-XOZ8ihYGRCaTit43qA9uo5QzW_ENmUb7S17efA8A/exec"; // replace with your Apps Script Web App URL
 
 let books = [];
 let cart = [];
