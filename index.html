@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Preorder</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+  <div class="flex flex-col md:flex-row h-screen">
+
+    <!-- Left Panel: Book List -->
+    <div class="w-full md:w-1/3 p-4 bg-white shadow-md overflow-y-auto">
+      <h2 class="text-xl font-bold mb-4">📚 Pre-order your next read with us</h2>
+      
+      <!-- Filters -->
+      <div class="mb-4">
+        <label><input type="radio" name="filter" value="title" checked> Title</label>
+        <label class="ml-4"><input type="radio" name="filter" value="author"> Author</label>
+        <label class="ml-4"><input type="radio" name="filter" value="genre"> Genre</label>
+
+        <div id="dropdownFilter" class="mt-2 hidden">
+          <select id="filterOptions" class="w-full border p-2 rounded"></select>
+        </div>
+      </div>
+
+      <!-- Book List -->
+      <ul id="bookList" class="space-y-2">
+        <!-- Books will load here from Google Sheets -->
+      </ul>
+    </div>
+
+    <!-- Right Panel: Order Section -->
+    <div class="w-full md:w-2/3 p-6 bg-gray-50 overflow-y-auto">
+      
+      <!-- Disclaimer -->
+      <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-4">
+        <p><strong>Disclaimer:</strong></p>
+        <ul class="list-disc list-inside">
+          <li>Pick-up only option</li>
+          <li>For faster transaction, do payment first</li>
+        </ul>
+      </div>
+
+      <!-- Payment Info -->
+      <div class="bg-white shadow p-4 mb-4 rounded">
+        <h3 class="font-bold mb-2">Payment Options</h3>
+        <p>GCash / Paymaya</p>
+        <p>Account Name: <strong>Cherel</strong></p>
+        <p>Account Number: <strong>09126456792</strong></p>
+      </div>
+
+      <!-- Cart -->
+      <div class="bg-white shadow p-4 mb-4 rounded">
+        <h3 class="font-bold mb-2">🛒 Your Order</h3>
+        <table class="w-full border">
+          <thead>
+            <tr class="bg-gray-200">
+              <th class="p-2 border">Item No.</th>
+              <th class="p-2 border">Book</th>
+              <th class="p-2 border">Qty</th>
+              <th class="p-2 border">Price</th>
+            </tr>
+          </thead>
+          <tbody id="cartItems">
+            <!-- Items appear here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Customer Form -->
+      <form id="orderForm" class="bg-white shadow p-4 rounded space-y-4">
+        <h3 class="font-bold mb-2">Customer Information</h3>
+        <input type="text" name="fullName" placeholder="Full Name" class="w-full border p-2 rounded" required>
+        <input type="email" name="email" placeholder="Email Address" class="w-full border p-2 rounded" required>
+        <input type="text" name="contact" placeholder="Contact Number" class="w-full border p-2 rounded" required>
+        <input type="text" name="fbName" placeholder="Facebook Name" class="w-full border p-2 rounded" required>
+        
+        <!-- File Upload -->
+        <label class="block">Confirmation of Payment:</label>
+        <input type="file" name="paymentProof" class="w-full border p-2 rounded" required>
+
+        <!-- Pickup -->
+        <label class="block font-bold">Pick-up Location:</label>
+        <select id="pickupLocation" name="pickupLocation" class="w-full border p-2 rounded" required>
+          <option value="">-- Select --</option>
+          <option value="sacred-heart">Feast Sacred Heart - Monday</option>
+          <option value="it-park">Feast IT Park - Saturday</option>
+          <option value="golden-prince">Feast Golden Prince - Saturday</option>
+          <option value="ayala">Feast Ayala - Sunday</option>
+        </select>
+
+        <label class="block">Pick-up Date:</label>
+        <input type="date" id="pickupDate" name="pickupDate" class="w-full border p-2 rounded" required>
+
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Confirm Order</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
