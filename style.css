@@ -1,33 +1,3 @@
-/* style.css */
-
-/* Custom scrollbar for book list */
-#bookList {
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-#bookList::-webkit-scrollbar {
-  width: 8px;
-}
-#bookList::-webkit-scrollbar-thumb {
-  background: #cbd5e0;
-  border-radius: 4px;
-}
-
-/* Table responsiveness */
-table {
-  border-collapse: collapse;
-}
-table th, table td {
-  text-align: center;
-}
-
-/* Mobile adjustments */
-@media (max-width: 768px) {
-  #bookList {
-    max-height: 40vh;
-  }
-}
 body {
   font-family: Arial, sans-serif;
 }
