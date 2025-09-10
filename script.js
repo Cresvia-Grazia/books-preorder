@@ -1,5 +1,5 @@
 // --- CONFIG ---
-const API_URL = "https://script.google.com/macros/s/AKfycbxmDVXy6zQ5aLvJp0MvQ-I0so8Av6CLLrwCxbSl9fsZKJAzlyboyj7qjwEh-vFJyi53wQ/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbzbBOqJOnedz96QvM_dwgkSr7S9Q-XOZ8ihYGRCaTit43qA9uo5QzW_ENmUb7S17efA8A/exec";
 
 // Store books and cart
 let books = [];
