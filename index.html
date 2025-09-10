@@ -1,71 +1,131 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Book Preorder — Debug</title>
+  <title>Book Preorder</title>
 
-  <!-- Tailwind for layout + quick look -->
+  <!-- Tailwind for fast styling -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 text-slate-800">
-  <div class="max-w-5xl mx-auto px-4 py-6">
+<body class="bg-slate-50 text-slate-900">
+
+  <div class="max-w-5xl mx-auto p-4">
     <header class="mb-4">
-      <h1 class="text-2xl font-bold">📚 Book Preorder — Debug</h1>
-      <div class="text-sm text-slate-600 mt-1">This page logs debug info to console and shows a health check.</div>
+      <h1 class="text-2xl font-bold text-sky-700">📚 Book Preorder</h1>
+      <p class="text-sm text-slate-600">Books load automatically. Add to cart → Confirm → Upload payment slip → Submit order.</p>
     </header>
 
-    <div class="mb-4 flex gap-3 items-center">
-      <input id="searchBox" class="p-2 border rounded w-full md:w-2/3" placeholder="Search title / author / genre">
-      <button id="healthBtn" class="px-3 py-2 bg-sky-600 text-white rounded">Health</button>
-      <button id="backupBtn" class="px-3 py-2 bg-amber-500 text-white rounded">Backup Inventory</button>
+    <!-- SEARCH + FILTER -->
+    <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+      <input id="searchBox" class="p-2 border rounded w-full md:w-2/3" placeholder="Search title, author, or genre" />
+      <div class="flex items-center gap-3">
+        <div class="text-sm">
+          <label class="mr-2"><input type="radio" name="filterType" value="title" checked> Title</label>
+          <label class="mr-2"><input type="radio" name="filterType" value="author"> Author</label>
+          <label><input type="radio" name="filterType" value="genre"> Genre</label>
+        </div>
+        <select id="filterDropdown" class="hidden p-2 border rounded"></select>
+      </div>
     </div>
 
-    <!-- Books grid -->
+    <!-- BOOK LIST (always first) -->
     <section id="booksSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-live="polite"></section>
 
-    <!-- Order area -->
-    <section class="mt-6 bg-white p-4 rounded shadow">
-      <h2 class="font-semibold">Order</h2>
-      <div id="cartArea" class="mt-3"></div>
-      <div id="cartTotal" class="mt-2 font-bold text-sky-700">Total: ₱0.00</div>
-      <div class="mt-3">
-        <button id="confirmBtn" class="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50" disabled>Confirm Order</button>
+    <!-- ORDER AREA (below books) -->
+    <section id="orderSection" class="mt-6">
+      <div class="bg-white p-4 rounded shadow">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="font-semibold">🛒 Order Summary</h2>
+          <div class="text-sm text-slate-500" id="cartCount">0 items</div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm table-fixed">
+            <thead class="bg-slate-50">
+              <tr>
+                <th class="p-2 w-12">#</th>
+                <th class="p-2 text-left">Title</th>
+                <th class="p-2 text-left">Author</th>
+                <th class="p-2 w-28">Qty</th>
+                <th class="p-2 w-28">Price</th>
+                <th class="p-2 w-12">Remove</th>
+              </tr>
+            </thead>
+            <tbody id="cartTbody"></tbody>
+          </table>
+        </div>
+
+        <div class="flex items-center justify-between mt-4">
+          <div id="cartEmptyNotice" class="text-sm text-slate-500">Your cart is empty.</div>
+          <div class="text-lg font-bold text-sky-700" id="cartTotal">Total: ₱0.00</div>
+        </div>
+
+        <div class="mt-4">
+          <button id="confirmOrderBtn" class="bg-sky-600 text-white px-4 py-2 rounded disabled:opacity-50" disabled>Confirm Order</button>
+          <button id="clearCartBtn" class="ml-3 text-sm text-rose-600">Clear cart</button>
+        </div>
       </div>
-    </section>
 
-    <!-- Checkout (hidden until confirm) -->
-    <section id="checkout" class="mt-6 hidden bg-white p-4 rounded shadow">
-      <h2 class="font-semibold">Checkout</h2>
-      <form id="checkoutForm" class="grid gap-3">
-        <input id="fullName" placeholder="Full name" class="p-2 border rounded" required />
-        <input id="email" type="email" placeholder="Email" class="p-2 border rounded" required />
-        <input id="contact" placeholder="Contact number" class="p-2 border rounded" required />
-        <input id="fbname" placeholder="Facebook name (optional)" class="p-2 border rounded" />
-        <label class="text-sm">Payment slip (image/pdf)
-          <input id="paymentFile" type="file" accept="image/*,.pdf" class="mt-1" />
-        </label>
-        <select id="pickupLocation" class="p-2 border rounded" required>
-          <option value="">Pick a location</option>
-          <option value="Feast Sacred Heart">Feast Sacred Heart — Monday</option>
-          <option value="Feast IT Park">Feast IT Park — Saturday</option>
-          <option value="Feast Golden Prince">Feast Golden Prince — Saturday</option>
-          <option value="Feast Ayala">Feast Ayala — Sunday</option>
-        </select>
+      <!-- Checkout (revealed after confirm) -->
+      <div id="checkoutDetails" class="mt-6 hidden">
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="card-warning p-4 rounded">
+            <h3 class="font-semibold mb-2">⚠️ Disclaimer</h3>
+            <ul class="text-sm list-disc pl-5 text-slate-700">
+              <li>Pick-up only — no shipping.</li>
+              <li>For faster transaction please pay first and upload confirmation.</li>
+            </ul>
+          </div>
 
-        <div>
-          <div class="text-sm mb-1">Pick a date (only highlighted weekdays are selectable)</div>
-          <div id="calendar" class="grid grid-cols-7 gap-1"></div>
-          <input id="pickupIso" type="hidden" name="pickupIso" />
-          <input id="pickupDisplay" class="mt-2 p-2 border rounded w-full bg-slate-50" readonly placeholder="No date selected" />
+          <div class="card-payment p-4 rounded">
+            <h3 class="font-semibold mb-2">💳 Payment</h3>
+            <p class="text-sm"><strong>GCash / PayMaya</strong></p>
+            <p class="text-sm"><strong>Account Name:</strong> Cherel</p>
+            <p class="text-sm"><strong>Account Number:</strong> 09126456792</p>
+          </div>
         </div>
 
-        <div class="flex gap-2">
-          <button id="submitOrder" class="px-4 py-2 bg-sky-600 text-white rounded">Submit</button>
-          <button id="cancel" type="button" class="px-4 py-2 bg-rose-500 text-white rounded">Cancel</button>
-        </div>
-      </form>
+        <form id="checkoutForm" class="mt-4 bg-white p-4 rounded shadow grid gap-3">
+          <div class="grid md:grid-cols-2 gap-3">
+            <input id="fullName" placeholder="Full name" class="p-2 border rounded" required />
+            <input id="email" type="email" placeholder="Email" class="p-2 border rounded" required />
+            <input id="contactNumber" placeholder="Contact number" class="p-2 border rounded" required />
+            <input id="fbName" placeholder="Facebook name (optional)" class="p-2 border rounded" />
+          </div>
+
+          <div class="grid md:grid-cols-2 gap-3">
+            <label class="block">
+              <span class="text-sm">Upload payment slip (image/pdf)</span>
+              <input id="paymentFile" type="file" accept="image/*,.pdf" class="mt-1 w-full" />
+            </label>
+
+            <label class="block">
+              <span class="text-sm">Pick-up location</span>
+              <select id="pickupLocation" class="mt-1 p-2 border rounded w-full" required>
+                <option value="">Choose location</option>
+                <option value="Feast Sacred Heart">Feast Sacred Heart — Monday</option>
+                <option value="Feast IT Park">Feast IT Park — Saturday</option>
+                <option value="Feast Golden Prince">Feast Golden Prince — Saturday</option>
+                <option value="Feast Ayala">Feast Ayala — Sunday</option>
+              </select>
+            </label>
+          </div>
+
+          <div>
+            <span class="text-sm">Pick-up date (click a highlighted date)</span>
+            <div id="calendar" class="grid grid-cols-7 gap-1 mt-2"></div>
+            <input id="pickupDateIso" type="hidden" />
+            <input id="pickupDateDisplay" readonly class="mt-2 p-2 border rounded w-full bg-slate-50" placeholder="No date selected" />
+          </div>
+
+          <div class="flex gap-2 justify-end">
+            <button id="submitOrderBtn" type="button" class="bg-green-600 text-white px-4 py-2 rounded">Submit Order</button>
+            <button id="cancelCheckoutBtn" type="button" class="bg-rose-500 text-white px-4 py-2 rounded">Cancel</button>
+          </div>
+        </form>
+      </div>
     </section>
   </div>
 
