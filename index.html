@@ -1,134 +1,76 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Book Preorder</title>
-
-  <!-- Tailwind for fast styling -->
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-slate-50 text-slate-900">
+<body>
+  <div class="container">
+    <!-- Left Panel: Book List -->
+    <div class="left-panel">
+      <h2>📚 Pre-order your next read with us</h2>
 
-  <div class="max-w-5xl mx-auto p-4">
-    <header class="mb-4">
-      <h1 class="text-2xl font-bold text-sky-700">📚 Book Preorder</h1>
-      <p class="text-sm text-slate-600">Books load automatically. Add to cart → Confirm → Upload payment slip → Submit order.</p>
-    </header>
+      <!-- Search / Filters -->
+      <div class="filters">
+        <input type="text" id="searchInput" placeholder="Search by title, author, or genre">
 
-    <!-- SEARCH + FILTER -->
-    <div class="mb-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-      <input id="searchBox" class="p-2 border rounded w-full md:w-2/3" placeholder="Search title, author, or genre" />
-      <div class="flex items-center gap-3">
-        <div class="text-sm">
-          <label class="mr-2"><input type="radio" name="filterType" value="title" checked> Title</label>
-          <label class="mr-2"><input type="radio" name="filterType" value="author"> Author</label>
-          <label><input type="radio" name="filterType" value="genre"> Genre</label>
-        </div>
-        <select id="filterDropdown" class="hidden p-2 border rounded"></select>
+        <label><input type="radio" name="filterType" value="title" checked> Title</label>
+        <label><input type="radio" name="filterType" value="author"> Author</label>
+        <label><input type="radio" name="filterType" value="genre"> Genre</label>
+
+        <!-- Dropdowns dynamically filled -->
+        <select id="authorFilter" style="display:none"></select>
+        <select id="genreFilter" style="display:none"></select>
       </div>
+
+      <!-- Book List -->
+      <div id="bookList" class="book-list"></div>
     </div>
 
-    <!-- BOOK LIST (always first) -->
-    <section id="booksSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-live="polite"></section>
+    <!-- Right Panel: Order + Form -->
+    <div class="right-panel">
+      <h2>Your Order</h2>
+      <div id="orderSummary"></div>
 
-    <!-- ORDER AREA (below books) -->
-    <section id="orderSection" class="mt-6">
-      <div class="bg-white p-4 rounded shadow">
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="font-semibold">🛒 Order Summary</h2>
-          <div class="text-sm text-slate-500" id="cartCount">0 items</div>
-        </div>
+      <button id="confirmOrderBtn" disabled>Confirm Order</button>
 
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm table-fixed">
-            <thead class="bg-slate-50">
-              <tr>
-                <th class="p-2 w-12">#</th>
-                <th class="p-2 text-left">Title</th>
-                <th class="p-2 text-left">Author</th>
-                <th class="p-2 w-28">Qty</th>
-                <th class="p-2 w-28">Price</th>
-                <th class="p-2 w-12">Remove</th>
-              </tr>
-            </thead>
-            <tbody id="cartTbody"></tbody>
-          </table>
-        </div>
-
-        <div class="flex items-center justify-between mt-4">
-          <div id="cartEmptyNotice" class="text-sm text-slate-500">Your cart is empty.</div>
-          <div class="text-lg font-bold text-sky-700" id="cartTotal">Total: ₱0.00</div>
-        </div>
-
-        <div class="mt-4">
-          <button id="confirmOrderBtn" class="bg-sky-600 text-white px-4 py-2 rounded disabled:opacity-50" disabled>Confirm Order</button>
-          <button id="clearCartBtn" class="ml-3 text-sm text-rose-600">Clear cart</button>
-        </div>
+      <div id="disclaimer" class="hidden">
+        <h3>Disclaimer</h3>
+        <p>📍 Pick-up only option<br>
+           ⚡ For faster transaction, do payment first</p>
+        <h4>Payment</h4>
+        <p>Gcash / Paymaya<br>
+        Account Name: <strong>Cherel</strong><br>
+        Account Number: <strong>09126456792</strong></p>
       </div>
 
-      <!-- Checkout (revealed after confirm) -->
-      <div id="checkoutDetails" class="mt-6 hidden">
-        <div class="grid md:grid-cols-2 gap-4">
-          <div class="card-warning p-4 rounded">
-            <h3 class="font-semibold mb-2">⚠️ Disclaimer</h3>
-            <ul class="text-sm list-disc pl-5 text-slate-700">
-              <li>Pick-up only — no shipping.</li>
-              <li>For faster transaction please pay first and upload confirmation.</li>
-            </ul>
-          </div>
-
-          <div class="card-payment p-4 rounded">
-            <h3 class="font-semibold mb-2">💳 Payment</h3>
-            <p class="text-sm"><strong>GCash / PayMaya</strong></p>
-            <p class="text-sm"><strong>Account Name:</strong> Cherel</p>
-            <p class="text-sm"><strong>Account Number:</strong> 09126456792</p>
-          </div>
-        </div>
-
-        <form id="checkoutForm" class="mt-4 bg-white p-4 rounded shadow grid gap-3">
-          <div class="grid md:grid-cols-2 gap-3">
-            <input id="fullName" placeholder="Full name" class="p-2 border rounded" required />
-            <input id="email" type="email" placeholder="Email" class="p-2 border rounded" required />
-            <input id="contactNumber" placeholder="Contact number" class="p-2 border rounded" required />
-            <input id="fbName" placeholder="Facebook name (optional)" class="p-2 border rounded" />
-          </div>
-
-          <div class="grid md:grid-cols-2 gap-3">
-            <label class="block">
-              <span class="text-sm">Upload payment slip (image/pdf)</span>
-              <input id="paymentFile" type="file" accept="image/*,.pdf" class="mt-1 w-full" />
-            </label>
-
-            <label class="block">
-              <span class="text-sm">Pick-up location</span>
-              <select id="pickupLocation" class="mt-1 p-2 border rounded w-full" required>
-                <option value="">Choose location</option>
-                <option value="Feast Sacred Heart">Feast Sacred Heart — Monday</option>
-                <option value="Feast IT Park">Feast IT Park — Saturday</option>
-                <option value="Feast Golden Prince">Feast Golden Prince — Saturday</option>
-                <option value="Feast Ayala">Feast Ayala — Sunday</option>
-              </select>
-            </label>
-          </div>
-
-          <div>
-            <span class="text-sm">Pick-up date (click a highlighted date)</span>
-            <div id="calendar" class="grid grid-cols-7 gap-1 mt-2"></div>
-            <input id="pickupDateIso" type="hidden" />
-            <input id="pickupDateDisplay" readonly class="mt-2 p-2 border rounded w-full bg-slate-50" placeholder="No date selected" />
-          </div>
-
-          <div class="flex gap-2 justify-end">
-            <button id="submitOrderBtn" type="button" class="bg-green-600 text-white px-4 py-2 rounded">Submit Order</button>
-            <button id="cancelCheckoutBtn" type="button" class="bg-rose-500 text-white px-4 py-2 rounded">Cancel</button>
-          </div>
-        </form>
-      </div>
-    </section>
+      <form id="customerForm" class="hidden">
+        <h3>Customer Information</h3>
+        <label>Full Name: <input type="text" id="fullName" required></label>
+        <label>Email: <input type="email" id="email" required></label>
+        <label>Contact Number: <input type="text" id="contactNumber" required></label>
+        <label>Facebook Name: <input type="text" id="fbName"></label>
+        <label>Upload Payment Confirmation:
+          <input type="file" id="paymentFile" accept="image/*,application/pdf">
+        </label>
+        <label>Pickup Location:
+          <select id="pickupLocation" required>
+            <option value="">-- Select Location --</option>
+            <option value="Feast Sacred Heart">Feast Sacred Heart - Monday</option>
+            <option value="Feast IT Park">Feast IT Park - Saturday</option>
+            <option value="Feast Golden Prince">Feast Golden Prince - Saturday</option>
+            <option value="Feast Ayala">Feast Ayala - Sunday</option>
+          </select>
+        </label>
+        <label>Pickup Date:
+          <input type="date" id="pickupDate" required>
+        </label>
+        <button type="submit">Submit Order</button>
+      </form>
+    </div>
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>
