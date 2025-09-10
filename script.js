@@ -1,170 +1,164 @@
-// script.js - frontend
-// Replace API_URL with your deployed Apps Script /exec URL if different
-const API_URL = "https://script.google.com/macros/s/AKfycbwttBqQuHGjCWInJiM8EGzy9jU_ZuQGeLmVxttcH847BVai_dkV8ew0nvFoOKz7DYtIJg/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbwttBqQuHGjCWInJiM8EGzy9jU_ZuQGeLmVxttcH847BVai_dkV8ew0nvFoOKz7DYtIJg/exec"; // replace with your /exec link
+let allBooks = [];
+let orderItems = [];
 
-let books = [];
-let cart = [];
+// Load books on page ready
+document.addEventListener("DOMContentLoaded", () => {
+  loadBooks();
 
-/* DOM refs */
-const booksSection = document.getElementById("booksSection");
-const searchBox = document.getElementById("searchBox");
-const filterRadios = document.querySelectorAll("input[name='filterType']");
-const filterDropdown = document.getElementById("filterDropdown");
-
-const cartTbody = document.getElementById("cartTbody");
-const cartTotalEl = document.getElementById("cartTotal");
-const cartEmptyNotice = document.getElementById("cartEmptyNotice");
-const confirmOrderBtn = document.getElementById("confirmOrderBtn");
-const clearCartBtn = document.getElementById("clearCartBtn");
-
-const checkoutDetails = document.getElementById("checkoutDetails");
-const pickupLocationEl = document.getElementById("pickupLocation");
-const calendarEl = document.getElementById("calendar");
-const pickupDateIso = document.getElementById("pickupDateIso");
-const pickupDateDisplay = document.getElementById("pickupDateDisplay");
-const paymentFileEl = document.getElementById("paymentFile");
-const submitOrderBtn = document.getElementById("submitOrderBtn");
-const cancelCheckoutBtn = document.getElementById("cancelCheckoutBtn");
-
-/* schedule mapping (0=Sun...6=Sat) */
-const scheduleMap = {
-  "Feast Sacred Heart": 1, // Monday
-  "Feast IT Park": 6, // Saturday
-  "Feast Golden Prince": 6, // Saturday
-  "Feast Ayala": 0 // Sunday
-};
-
-/* ---------- utilities ---------- */
-function numberFormat(n){ return Number(n).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}); }
-function truncate(s,n){ return s.length>n ? s.slice(0,n-1)+"…" : s; }
-function escapeHtml(s){ return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
-
-/* ---------- fetch JSON with error handling ---------- */
-async function fetchJson(url, opts = {}) {
-  try {
-    const r = await fetch(url, opts);
-    if (!r.ok) throw new Error(`HTTP ${r.status} ${r.statusText}`);
-    return await r.json();
-  } catch (err) {
-    console.error("fetchJson error:", err);
-    throw err;
-  }
-}
-
-/* ---------- load inventory on page load ---------- */
-async function loadInventory() {
-  try {
-    booksSection.innerHTML = `<div class="p-4 text-sm">Loading books…</div>`;
-    const data = await fetchJson(`${API_URL}?action=getInventory`);
-    if (!Array.isArray(data)) {
-      booksSection.innerHTML = `<div class="p-4 text-sm text-rose-600">Failed to load inventory — invalid response.</div>`;
-      console.error("Invalid inventory response:", data);
-      return;
-    }
-    books = data;
-    buildFilterDropdownOptions();
-    renderBooks(books);
-  } catch (err) {
-    booksSection.innerHTML = `<div class="p-4 text-sm text-rose-600">Failed to load inventory — check console and Apps Script deployment.</div>`;
-  }
-}
-
-/* ---------- render books ---------- */
-function renderBooks(list) {
-  booksSection.innerHTML = "";
-  if (!list.length) {
-    booksSection.innerHTML = `<div class="p-4 text-sm">No books found.</div>`;
-    return;
-  }
-
-  list.forEach((b, idx) => {
-    const img = b.imageUrl && b.imageUrl.trim() ? b.imageUrl : "https://via.placeholder.com/400x600?text=No+Image";
-    const card = document.createElement("div");
-    card.className = "bg-white p-3 rounded shadow-sm";
-    card.innerHTML = `
-      <img class="book-image mb-3" src="${escapeHtml(img)}" alt="${escapeHtml(b.title)}" />
-      <div class="font-semibold">${escapeHtml(b.title)}</div>
-      <div class="text-sm text-slate-600">by ${escapeHtml(b.author || "Unknown")}</div>
-      <div class="mt-1"><span class="text-xs px-2 py-1 rounded bg-slate-100">${escapeHtml(b.genre || "")}</span></div>
-      <div class="text-sky-700 font-semibold mt-2">₱${numberFormat(b.discountedPrice ?? b.price ?? 0)}</div>
-      <p class="desc-line text-sm text-slate-600 mt-2">${escapeHtml(truncate(b.description || "", 140))}</p>
-      <div class="mt-3"><button class="add-btn bg-emerald-600 text-white px-3 py-1 rounded" data-idx="${idx}">Add to cart</button></div>
-    `;
-    booksSection.appendChild(card);
+  document.getElementById("searchInput").addEventListener("input", (e) => {
+    filterBooks(e.target.value);
   });
 
-  // attach add handlers
-  document.querySelectorAll(".add-btn").forEach(btn => btn.addEventListener("click", () => {
-    addToCart(Number(btn.dataset.idx));
-  }));
-}
+  document.getElementById("confirmOrderBtn").addEventListener("click", showDisclaimerForm);
 
-/* ---------- filters ---------- */
-function buildFilterDropdownOptions() {
-  // populate dropdown with authors by default (radio toggles between title vs dropdown)
-  const authors = Array.from(new Set(books.map(b => (b.author||"").trim()).filter(Boolean))).sort();
-  filterDropdown.innerHTML = `<option value="">-- All --</option>`;
-  authors.forEach(a => filterDropdown.innerHTML += `<option value="${escapeHtml(a)}">${escapeHtml(a)}</option>`);
-}
+  document.getElementById("pickupLocation").addEventListener("change", handlePickupLocation);
 
-filterRadios.forEach(r => r.addEventListener("change", () => {
-  const type = document.querySelector("input[name='filterType']:checked").value;
-  if (type === "title") {
-    searchBox.classList.remove("hidden");
-    filterDropdown.classList.add("hidden");
-    searchBox.value = "";
-    renderBooks(books);
-  } else {
-    const values = Array.from(new Set(books.map(b => (b[type]||"").trim()).filter(Boolean))).sort();
-    filterDropdown.innerHTML = `<option value="">-- All --</option>`;
-    values.forEach(v => filterDropdown.innerHTML += `<option value="${escapeHtml(v)}">${escapeHtml(v)}</option>`);
-    searchBox.classList.add("hidden");
-    filterDropdown.classList.remove("hidden");
+  document.getElementById("customerForm").addEventListener("submit", handleSubmitOrder);
+});
+
+// Fetch inventory
+async function loadBooks() {
+  try {
+    const res = await fetch(`${API_URL}?action=getInventory`);
+    allBooks = await res.json();
+    renderBooks(allBooks);
+  } catch (err) {
+    console.error(err);
+    document.getElementById("bookList").innerHTML = `<p style="color:red">Failed to load inventory.</p>`;
   }
-}));
-
-searchBox.addEventListener("input", () => {
-  const q = searchBox.value.trim().toLowerCase();
-  if (!q) return renderBooks(books);
-  renderBooks(books.filter(b => (b.title||"").toLowerCase().includes(q)));
-});
-filterDropdown.addEventListener("change", () => {
-  const type = document.querySelector("input[name='filterType']:checked").value;
-  const val = filterDropdown.value;
-  if (!val) return renderBooks(books);
-  renderBooks(books.filter(b => ((b[type]||"").trim()) === val));
-});
-
-/* ---------- cart management ---------- */
-function addToCart(bookIndex) {
-  const b = books[bookIndex];
-  if (!b) return;
-  const found = cart.find(i => i.title === b.title && i.author === b.author);
-  if (found) found.qty += 1;
-  else cart.push({ title: b.title, author: b.author, price: Number(b.discountedPrice ?? b.price ?? 0), qty: 1 });
-  renderCart();
 }
 
-function renderCart() {
-  cartTbody.innerHTML = "";
-  if (!cart.length) {
-    cartEmptyNotice.classList.remove("hidden");
-    cartTotalEl.textContent = "Total: ₱0.00";
-    confirmOrderBtn.disabled = true;
+// Render book cards
+function renderBooks(books) {
+  const bookList = document.getElementById("bookList");
+  bookList.innerHTML = books.map(b => `
+    <div class="book-card">
+      <img src="${b.ImageURL || 'https://via.placeholder.com/100'}" alt="${b.Title}">
+      <h3>${b.Title}</h3>
+      <p><strong>Author:</strong> ${b.Author}</p>
+      <p><strong>Genre:</strong> ${b.Genre}</p>
+      <p><strong>Price:</strong> ₱${b["Discounted Price"] || b.Price}</p>
+      <button onclick='addToOrder(${JSON.stringify(b)})'>Reserve</button>
+    </div>
+  `).join("");
+}
+
+// Add to order
+function addToOrder(book) {
+  orderItems.push({...book, qty: 1});
+  renderOrder();
+}
+
+function renderOrder() {
+  const orderDiv = document.getElementById("orderSummary");
+  if (!orderItems.length) {
+    orderDiv.innerHTML = "<p>No items selected.</p>";
+    document.getElementById("confirmOrderBtn").disabled = true;
     return;
   }
-  cartEmptyNotice.classList.add("hidden");
-  confirmOrderBtn.disabled = false;
 
   let total = 0;
-  cart.forEach((item, i) => {
-    const subtotal = item.price * item.qty;
-    total += subtotal;
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="p-2 text-center">${i+1}</td>
-      <td class="p-2">${escapeHtml(item.title)}</td>
-      <td class="p-2">${escapeHtml(item.author)}</td>
-      <td class="p-2 text-center"><input type="number" min="1" value="${item.qty}" data-index="${i}" class="w-20 p-1 border rounded qty-input" /></td>
-      <td class="p-2 text-right">₱${numberFormat(subtotal)}</td>
-      <
+  orderDiv.innerHTML = orderItems.map((it, idx) => {
+    const price = it["Discounted Price"] || it.Price;
+    total += price * it.qty;
+    return `<p>${idx+1}. "${it.Title}" by ${it.Author} — ₱${price} x ${it.qty}</p>`;
+  }).join("") + `<hr><p><strong>Total: ₱${total}</strong></p>`;
+
+  document.getElementById("confirmOrderBtn").disabled = false;
+}
+
+// Show disclaimer + form
+function showDisclaimerForm() {
+  document.getElementById("disclaimer").classList.remove("hidden");
+  document.getElementById("customerForm").classList.remove("hidden");
+}
+
+// Handle pickup restriction
+function handlePickupLocation(e) {
+  const location = e.target.value;
+  const dateInput = document.getElementById("pickupDate");
+  const today = new Date();
+  let allowedDay;
+
+  if (location.includes("Sacred Heart")) allowedDay = 1; // Monday
+  if (location.includes("IT Park")) allowedDay = 6; // Saturday
+  if (location.includes("Golden Prince")) allowedDay = 6; // Saturday
+  if (location.includes("Ayala")) allowedDay = 0; // Sunday
+
+  // Find next allowed date
+  let nextDate = new Date(today);
+  nextDate.setDate(today.getDate() + ((7 + allowedDay - today.getDay()) % 7 || 7));
+
+  // Restrict input
+  dateInput.min = nextDate.toISOString().split("T")[0];
+  dateInput.value = nextDate.toISOString().split("T")[0];
+
+  // Gray out invalid days
+  dateInput.oninput = () => {
+    const chosen = new Date(dateInput.value);
+    if (chosen.getDay() !== allowedDay) {
+      alert("Invalid date for selected location. Please pick the allowed day.");
+      dateInput.value = nextDate.toISOString().split("T")[0];
+    }
+  };
+}
+
+// Handle form submit
+async function handleSubmitOrder(e) {
+  e.preventDefault();
+
+  const fileInput = document.getElementById("paymentFile");
+  let fileUrl = "";
+  if (fileInput.files.length > 0) {
+    fileUrl = await uploadFile(fileInput.files[0]);
+  }
+
+  const payload = {
+    action: "saveOrder",
+    FullName: document.getElementById("fullName").value,
+    Email: document.getElementById("email").value,
+    ContactNumber: document.getElementById("contactNumber").value,
+    FBName: document.getElementById("fbName").value,
+    Pickup: document.getElementById("pickupLocation").value,
+    PickupDate: document.getElementById("pickupDate").value,
+    ItemsJSON: JSON.stringify(orderItems),
+    Total: orderItems.reduce((sum, it) => sum + ((it["Discounted Price"] || it.Price) * it.qty), 0),
+    PaymentConfirmed: fileUrl
+  };
+
+  const res = await fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify(payload),
+    headers: { "Content-Type": "application/json" }
+  });
+
+  const result = await res.json();
+  alert(result.success ? "Order submitted successfully!" : "Error saving order.");
+}
+
+// Upload file to Apps Script
+async function uploadFile(file) {
+  const reader = new FileReader();
+  return new Promise((resolve, reject) => {
+    reader.onload = async () => {
+      const base64Data = reader.result.split(",")[1];
+      const payload = {
+        action: "uploadFile",
+        data: base64Data,
+        filename: file.name,
+        mimeType: file.type
+      };
+
+      const res = await fetch(API_URL, {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" }
+      });
+      const result = await res.json();
+      if (result.success) resolve(result.fileUrl);
+      else reject("Upload failed");
+    };
+    reader.readAsDataURL(file);
+  });
+}
