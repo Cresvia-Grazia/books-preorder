@@ -28,3 +28,19 @@ table th, table td {
     max-height: 40vh;
   }
 }
+body {
+  font-family: Arial, sans-serif;
+}
+
+/* Scroll behavior */
+#bookList {
+  max-height: 75vh;
+  overflow-y: auto;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  #bookList {
+    max-height: 60vh;
+  }
+}
