@@ -3,98 +3,82 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book Pre-order</title>
+  <title>Book Preorder</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="container">
-
-    <!-- Books Section -->
-    <section class="books-panel">
+    <!-- LEFT: Book List -->
+    <aside class="book-list">
       <h2>📚 Pre-order your next read with us</h2>
 
-      <!-- Filter Controls -->
+      <!-- Filters -->
       <div class="filters">
-        <label><input type="radio" name="filter" value="title" checked> Title</label>
-        <label><input type="radio" name="filter" value="author"> Author</label>
-        <label><input type="radio" name="filter" value="genre"> Genre</label>
+        <input type="text" id="searchBox" placeholder="Search books...">
+        <div>
+          <label><input type="radio" name="filter" value="title" checked> Title</label>
+          <label><input type="radio" name="filter" value="author"> Author</label>
+          <label><input type="radio" name="filter" value="genre"> Genre</label>
+        </div>
         <select id="filterDropdown" style="display:none;"></select>
       </div>
 
-      <!-- Books List -->
+      <!-- Books will load here -->
       <div id="bookList"></div>
-    </section>
+    </aside>
 
-    <!-- Order Section -->
-    <section class="order-panel" id="orderPanel">
-      <h2>🛒 Order Summary</h2>
-      <table class="cart-table" id="cartTable">
-        <thead>
-          <tr>
-            <th>Item No.</th>
-            <th>Title</th>
-            <th>Author</th>
-            <th>Qty</th>
-            <th>Price</th>
-            <th>Remove</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      </table>
+    <!-- RIGHT: Order / Payment -->
+    <main class="order-section">
+      <h2>🛒 Your Order</h2>
+      <div id="cart"></div>
+      <div id="orderTotal"></div>
+      <button id="confirmOrderBtn" disabled>Confirm Order</button>
 
-      <div id="orderTotal"><strong>Total: ₱0.00</strong></div>
-
-      <button id="confirmOrderBtn">Confirm Order</button>
-
-      <!-- Hidden until order confirm -->
-      <div id="extraDetails" style="display:none; margin-top:1rem;">
-        <!-- Disclaimer -->
-        <div class="disclaimer">
-          <p>⚠️ Disclaimer:</p>
+      <!-- Disclaimer + Payment -->
+      <div id="disclaimerPayment" class="hidden">
+        <div class="card warning">
+          <h3>⚠️ Disclaimer</h3>
           <ul>
-            <li>Pick-up only option</li>
-            <li>For faster transaction, do payment first</li>
+            <li>📍 Pick-up only option available</li>
+            <li>⚡ For faster transaction, kindly pay before pickup</li>
           </ul>
         </div>
 
-        <!-- Payment Info -->
-        <h3>💳 Payment</h3>
-        <p>GCash / Paymaya</p>
-        <p><strong>Account Name:</strong> Cherel</p>
-        <p><strong>Account Number:</strong> 09126456792</p>
+        <div class="card payment">
+          <h3>💳 Payment Options</h3>
+          <p><strong>GCash / PayMaya</strong></p>
+          <p><strong>Account Name:</strong> Cherel</p>
+          <p><strong>Account Number:</strong> 09126456792</p>
+        </div>
 
         <!-- Customer Info -->
-        <h3>👤 Customer Information</h3>
-        <label>Full Name:<br><input type="text" id="fullName"></label>
-        <label>Email Address:<br><input type="email" id="email"></label>
-        <label>Contact Number:<br><input type="text" id="contact"></label>
-        <label>FB Name:<br><input type="text" id="fbName"></label>
-        <label>Payment Confirmation:<br><input type="file" id="paymentProof"></label>
+        <form id="orderForm">
+          <h3>👤 Customer Information</h3>
+          <label>Full Name:<input type="text" name="fullName" required></label>
+          <label>Email Address:<input type="email" name="email" required></label>
+          <label>Contact Number:<input type="text" name="contact" required></label>
+          <label>Facebook Name:<input type="text" name="fbname"></label>
+          <label>Upload Payment Confirmation:<input type="file" name="paymentFile"></label>
 
-        <!-- Pickup Info -->
-        <h3>📍 Pickup Location</h3>
-        <select id="pickupLocation">
-          <option value="">Select Location</option>
-          <option value="Feast Sacred Heart">Feast Sacred Heart - Monday</option>
-          <option value="Feast IT Park">Feast IT Park - Saturday</option>
-          <option value="Feast Golden Prince">Feast Golden Prince - Saturday</option>
-          <option value="Feast Ayala">Feast Ayala - Sunday</option>
-        </select>
+          <label>Pickup Location:
+            <select id="pickupLocation" name="pickup" required>
+              <option value="">Select Location</option>
+              <option value="Sacred Heart">Feast Sacred Heart - Monday</option>
+              <option value="IT Park">Feast IT Park - Saturday</option>
+              <option value="Golden Prince">Feast Golden Prince - Saturday</option>
+              <option value="Ayala">Feast Ayala - Sunday</option>
+            </select>
+          </label>
 
-        <label>Date:<br>
-          <input type="date" id="pickupDate">
-        </label>
+          <label>Pickup Date:
+            <input type="text" id="pickupDate" name="pickupDate" readonly>
+          </label>
 
-        <button id="submitOrderBtn">Submit Order</button>
+          <button type="submit">Submit Order</button>
+        </form>
       </div>
-    </section>
+    </main>
   </div>
-
-  <!-- Floating cart button (mobile only) -->
-  <button class="floating-cart-btn"
-    onclick="document.getElementById('orderPanel').scrollIntoView({behavior:'smooth'})">
-    🛒 Go to Cart
-  </button>
 
   <script src="script.js"></script>
 </body>
