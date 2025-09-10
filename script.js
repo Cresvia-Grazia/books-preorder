@@ -1,238 +1,260 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbwttBqQuHGjCWInJiM8EGzy9jU_ZuQGeLmVxttcH847BVai_dkV8ew0nvFoOKz7DYtIJg/exec"; 
-let allBooks = [];
-let cart = [];
+// script.js
+const API_URL = "https://script.google.com/macros/s/AKfycbxmDVXy6zQ5aLvJp0MvQ-I0so8Av6CLLrwCxbSl9fsZKJAzlyboyj7qjwEh-vFJyi53wQ/exec";
+// Replace above if you deploy to a different web app URL.
 
-// Init
-document.addEventListener("DOMContentLoaded", () => {
-  loadBooks();
+let inventory = []; // will hold books from spreadsheet
+let cart = [];      // { title, author, price, qty, rowIndex? }
 
-  document.getElementById("searchBox").addEventListener("input", (e) => {
-    filterBooks(e.target.value);
-  });
+/////////////////////
+// Helper utilities
+function numberFormat(n){ return Number(n).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2}); }
+function escapeHtml(s){ return String(s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;"); }
 
-  document.getElementById("confirmOrderBtn").addEventListener("click", () => {
-    document.getElementById("checkoutDetails").classList.remove("hidden");
-  });
-
-  document.getElementById("clearCartBtn").addEventListener("click", () => {
-    cart = [];
-    renderCart();
-  });
-
-  document.getElementById("pickupLocation").addEventListener("change", handlePickupLocation);
-
-  document.getElementById("submitOrderBtn").addEventListener("click", handleSubmitOrder);
-
-  document.getElementById("cancelCheckoutBtn").addEventListener("click", () => {
-    document.getElementById("checkoutDetails").classList.add("hidden");
-  });
-});
-
-// Fetch inventory
-async function loadBooks() {
+/////////////////////
+// Load inventory
+async function loadInventory(){
   try {
+    document.getElementById("booksSection").innerHTML = `<div class="p-4 text-sm text-slate-500">Loading books...</div>`;
     const res = await fetch(`${API_URL}?action=getInventory`);
-    allBooks = await res.json();
-    renderBooks(allBooks);
+    const data = await res.json();
+    if (!Array.isArray(data)) throw new Error("Invalid inventory response: " + JSON.stringify(data));
+    // Normalize fields: prefer headers Title,Author,Genre,Price,Discounted Price,Location,Stock,ImageURL,Description
+    inventory = data.map(row => ({
+      title: row.Title ?? row.title ?? row.Title ?? "",
+      author: row.Author ?? row.author ?? "",
+      genre: row.Genre ?? row.genre ?? "",
+      price: Number(row["Price"] ?? row.price ?? 0) || 0,
+      discounted: Number(row["Discounted Price"] ?? row.discountedPrice ?? row["Discounted Price"] ?? row.discounted || 0) || 0,
+      location: row.Location ?? row.location ?? "",
+      stock: row.Stock ?? row.stock ?? "",
+      imageUrl: row.ImageURL ?? row.imageUrl ?? "",
+      description: row.Description ?? row.description ?? ""
+    }));
+    renderBooks(inventory);
+    buildFilterDropdowns();
   } catch (err) {
-    console.error(err);
-    document.getElementById("booksSection").innerHTML = `<p class="text-red-600">Failed to load inventory.</p>`;
+    console.error("loadInventory error", err);
+    document.getElementById("booksSection").innerHTML = `<div class="p-4 text-sm text-rose-600">Failed to load inventory — check Apps Script deployment and spreadsheet access. See console.</div>`;
   }
 }
 
-// Render book cards
-function renderBooks(books) {
-  const list = document.getElementById("booksSection");
-  list.innerHTML = books.map((b, idx) => `
-    <div class="bg-white p-3 rounded shadow flex flex-col">
-      <img src="${b.ImageURL || 'https://via.placeholder.com/200x180'}" alt="${b.Title}" class="book-image mb-2">
-      <h3 class="font-semibold">${b.Title}</h3>
-      <p class="text-sm text-slate-600">by ${b.Author}</p>
-      <p class="text-xs text-slate-500">${b.Genre}</p>
-      <p class="font-bold text-sky-700 mt-1">₱${b["Discounted Price"] || b.Price}</p>
-      <button onclick='addToCart(${idx})' class="mt-auto bg-sky-600 text-white px-3 py-1 rounded text-sm">Reserve</button>
-    </div>
-  `).join("");
+/////////////////////
+// Render books
+function renderBooks(list){
+  const sec = document.getElementById("booksSection");
+  sec.innerHTML = "";
+  if (!list.length) {
+    sec.innerHTML = `<div class="p-4 text-sm text-slate-600">No books found.</div>`;
+    return;
+  }
+
+  list.forEach((b, idx) => {
+    const price = (b.discounted && b.discounted > 0) ? b.discounted : b.price;
+    const img = b.imageUrl && b.imageUrl.trim() ? b.imageUrl : "https://via.placeholder.com/400x600?text=No+Image";
+    const card = document.createElement("article");
+    card.className = "bg-white p-3 rounded shadow-sm flex flex-col";
+    card.innerHTML = `
+      <img src="${escapeHtml(img)}" alt="${escapeHtml(b.title)}" class="book-image mb-3">
+      <div class="mb-1">
+        <div class="font-semibold text-slate-800">${escapeHtml(b.title)}</div>
+        <div class="text-sm text-slate-600">by ${escapeHtml(b.author || "Unknown")}</div>
+      </div>
+      <div class="flex items-center justify-between gap-2 mt-auto">
+        <div><span class="text-xs py-1 px-2 rounded bg-slate-100 text-slate-700">${escapeHtml(b.genre || "")}</span></div>
+        <div class="text-sky-700 font-semibold">₱${numberFormat(price)}</div>
+      </div>
+      <button class="mt-3 bg-emerald-600 text-white px-3 py-1 rounded text-sm" data-idx="${idx}">Add</button>
+    `;
+    sec.appendChild(card);
+  });
+
+  // attach add handlers
+  document.querySelectorAll("#booksSection button[data-idx]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const i = Number(btn.dataset.idx);
+      addToCart(i);
+    });
+  });
 }
 
-// Add to cart
-function addToCart(idx) {
-  const book = allBooks[idx];
-  const existing = cart.find(it => it.Title === book.Title);
-  if (existing) {
-    existing.qty += 1;
-  } else {
-    cart.push({ ...book, qty: 1 });
-  }
+/////////////////////
+// Filters
+function buildFilterDropdowns(){
+  // prepare dropdown when user selects author/genre
+  const authors = Array.from(new Set(inventory.map(b => (b.author||"").trim()).filter(Boolean))).sort();
+  const genres = Array.from(new Set(inventory.map(b => (b.genre||"").trim()).filter(Boolean))).sort();
+  // initial hidden
+  const dd = document.getElementById("filterDropdown");
+  dd.innerHTML = "";
+  // wire radio changes
+  document.querySelectorAll("input[name='filterType']").forEach(r => r.addEventListener("change", () => {
+    const type = document.querySelector("input[name='filterType']:checked").value;
+    if (type === "title") {
+      dd.classList.add("hidden");
+      document.getElementById("searchBox").classList.remove("hidden");
+      document.getElementById("searchBox").value = "";
+      renderBooks(inventory);
+    } else {
+      // populate ddl for author or genre
+      dd.innerHTML = `<option value="">-- All --</option>`;
+      const values = (type === "author") ? authors : genres;
+      values.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; dd.appendChild(o); });
+      dd.classList.remove("hidden");
+      document.getElementById("searchBox").classList.add("hidden");
+    }
+  }));
+
+  // dropdown change filter
+  dd.addEventListener("change", () => {
+    const type = document.querySelector("input[name='filterType']:checked").value;
+    const val = dd.value;
+    if (!val) renderBooks(inventory);
+    else renderBooks(inventory.filter(b => ((b[type]||"").trim()) === val));
+  });
+
+  // search box filter
+  document.getElementById("searchBox").addEventListener("input", (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    if (!q) renderBooks(inventory);
+    else renderBooks(inventory.filter(b => (b.title||"").toLowerCase().includes(q)));
+  });
+}
+
+/////////////////////
+// Cart management
+function addToCart(idx){
+  const b = inventory[idx];
+  if (!b) return;
+  const existing = cart.find(it => it.title === b.title && it.author === b.author);
+  if (existing) existing.qty += 1;
+  else cart.push({
+    title: b.title,
+    author: b.author,
+    price: (b.discounted && b.discounted > 0) ? b.discounted : b.price,
+    qty: 1
+  });
   renderCart();
 }
 
-// Render cart
-function renderCart() {
+function updateQty(index, qty){
+  cart[index].qty = Math.max(1, parseInt(qty) || 1);
+  renderCart();
+}
+
+function removeFromCart(index){
+  cart.splice(index,1);
+  renderCart();
+}
+
+function clearCart(){
+  cart = [];
+  renderCart();
+}
+
+function renderCart(){
   const tbody = document.getElementById("cartTbody");
-  const countEl = document.getElementById("cartCount");
+  const count = document.getElementById("cartCount");
   const totalEl = document.getElementById("cartTotal");
   const emptyNotice = document.getElementById("cartEmptyNotice");
-
   tbody.innerHTML = "";
   if (!cart.length) {
-    countEl.textContent = "0 items";
+    count.textContent = "0 items";
     totalEl.textContent = "Total: ₱0.00";
-    emptyNotice.classList.remove("hidden");
+    emptyNotice.style.display = "block";
     document.getElementById("confirmOrderBtn").disabled = true;
     return;
   }
-
+  emptyNotice.style.display = "none";
   let total = 0;
   cart.forEach((it, i) => {
-    const price = it["Discounted Price"] || it.Price;
-    total += price * it.qty;
-    tbody.innerHTML += `
-      <tr>
-        <td class="p-2">${i + 1}</td>
-        <td class="p-2">${it.Title}</td>
-        <td class="p-2">${it.Author}</td>
-        <td class="p-2"><input type="number" min="1" value="${it.qty}" class="w-16 border p-1 text-center" onchange="updateQty(${i}, this.value)" /></td>
-        <td class="p-2">₱${price * it.qty}</td>
-        <td class="p-2"><button class="text-rose-600" onclick="removeFromCart(${i})">✖</button></td>
-      </tr>
+    const subtotal = it.price * it.qty;
+    total += subtotal;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="p-2 text-center">${i+1}</td>
+      <td class="p-2">${escapeHtml(it.title)}</td>
+      <td class="p-2">${escapeHtml(it.author)}</td>
+      <td class="p-2 text-center"><input type="number" min="1" value="${it.qty}" data-i="${i}" class="w-20 p-1 border rounded qty-input" /></td>
+      <td class="p-2 text-right">₱${numberFormat(subtotal)}</td>
+      <td class="p-2 text-center"><button class="remove-btn text-rose-600" data-i="${i}">✖</button></td>
     `;
+    tbody.appendChild(tr);
   });
 
-  countEl.textContent = `${cart.length} items`;
-  totalEl.textContent = `Total: ₱${total.toFixed(2)}`;
-  emptyNotice.classList.add("hidden");
+  // wire qty change & remove
+  document.querySelectorAll(".qty-input").forEach(inp => inp.addEventListener("change", (e) => {
+    const i = Number(e.target.dataset.i); updateQty(i, e.target.value);
+  }));
+  document.querySelectorAll(".remove-btn").forEach(b => b.addEventListener("click", (e) => {
+    const i = Number(e.target.dataset.i); removeFromCart(i);
+  }));
+
+  count.textContent = `${cart.length} items`;
+  totalEl.textContent = `Total: ₱${numberFormat(total)}`;
   document.getElementById("confirmOrderBtn").disabled = false;
 }
 
-function updateQty(i, qty) {
-  cart[i].qty = parseInt(qty) || 1;
-  renderCart();
-}
-
-function removeFromCart(i) {
-  cart.splice(i, 1);
-  renderCart();
-}
-
-// Calendar rendering
-function renderCalendar(allowedDay) {
-  const calendarEl = document.getElementById("calendar");
-  const hiddenIso = document.getElementById("pickupDateIso");
-  const displayInput = document.getElementById("pickupDateDisplay");
-
-  calendarEl.innerHTML = "";
-  hiddenIso.value = "";
-  displayInput.value = "";
-
-  const today = new Date();
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-
-  // pad for first day alignment
-  for (let i = 0; i < monthStart.getDay(); i++) {
-    const empty = document.createElement("div");
-    calendarEl.appendChild(empty);
-  }
-
-  for (let d = 1; d <= monthEnd.getDate(); d++) {
-    const date = new Date(today.getFullYear(), today.getMonth(), d);
-    const day = date.getDay();
-    const iso = date.toISOString().split("T")[0];
-
-    const cell = document.createElement("div");
-    cell.textContent = d;
-    cell.className = "calendar-day";
-
-    if (day === allowedDay && date >= today) {
-      cell.classList.add("enabled");
-      cell.addEventListener("click", () => {
-        document.querySelectorAll(".calendar-day").forEach(c => c.classList.remove("selected"));
-        cell.classList.add("selected");
-        hiddenIso.value = iso;
-        displayInput.value = date.toDateString();
-      });
-    } else {
-      cell.classList.add("disabled");
-    }
-
-    calendarEl.appendChild(cell);
-  }
-}
-
-// Pickup location handler
-function handlePickupLocation(e) {
-  const location = e.target.value;
-  let allowedDay;
-
-  if (location.includes("Sacred Heart")) allowedDay = 1; // Monday
-  if (location.includes("IT Park")) allowedDay = 6; // Saturday
-  if (location.includes("Golden Prince")) allowedDay = 6; // Saturday
-  if (location.includes("Ayala")) allowedDay = 0; // Sunday
-
-  if (allowedDay !== undefined) {
-    renderCalendar(allowedDay);
-  }
-}
-
-// Submit order
-async function handleSubmitOrder() {
-  if (!cart.length) {
-    alert("Cart is empty!");
-    return;
-  }
-
-  const fileInput = document.getElementById("paymentFile");
-  let fileUrl = "";
-  if (fileInput.files.length > 0) {
-    fileUrl = await uploadFile(fileInput.files[0]);
-  }
-
-  const payload = {
-    action: "saveOrder",
-    FullName: document.getElementById("fullName").value,
-    Email: document.getElementById("email").value,
-    ContactNumber: document.getElementById("contactNumber").value,
-    FBName: document.getElementById("fbName").value,
-    Pickup: document.getElementById("pickupLocation").value,
-    PickupDate: document.getElementById("pickupDateIso").value,
-    ItemsJSON: JSON.stringify(cart),
-    Total: cart.reduce((sum, it) => sum + ((it["Discounted Price"] || it.Price) * it.qty), 0),
-    PaymentConfirmed: fileUrl
-  };
-
-  const res = await fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify(payload),
-    headers: { "Content-Type": "application/json" }
-  });
-
-  const result = await res.json();
-  alert(result.success ? "✅ Order submitted successfully!" : "❌ Error saving order.");
-}
-
-// Upload file to Apps Script
-async function uploadFile(file) {
-  const reader = new FileReader();
-  return new Promise((resolve, reject) => {
-    reader.onload = async () => {
-      const base64Data = reader.result.split(",")[1];
-      const payload = {
-        action: "uploadFile",
-        data: base64Data,
-        filename: file.name,
-        mimeType: file.type
-      };
-
-      const res = await fetch(API_URL, {
-        method: "POST",
-        body: JSON.stringify(payload),
-        headers: { "Content-Type": "application/json" }
-      });
-      const result = await res.json();
-      if (result.success) resolve(result.fileUrl);
-      else reject("Upload failed");
+/////////////////////
+// Confirm and save reservation
+document.getElementById("confirmOrderBtn").addEventListener("click", async () => {
+  if (!cart.length) { alert("Cart is empty"); return; }
+  // show checkout area (we will save immediately on confirm)
+  // Collect pickup information via prompt modal (simple)
+  const pickup = prompt("Select pickup location (type exactly):\nFeast Sacred Heart\nFeast IT Park\nFeast Golden Prince\nFeast Ayala", "Feast Sacred Heart");
+  if (!pickup) return;
+  // Validate pickup mapping to allowed weekdays (we won't enforce date here; user will choose date in form)
+  // Save reservation now
+  try {
+    const payload = {
+      action: "saveReservation",
+      cart: cart,
+      pickupLocation: pickup,
+      total: cart.reduce((s,i)=> s + (i.price * i.qty), 0)
     };
-    reader.readAsDataURL(file);
-  });
-}
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (json && json.success && json.orderId) {
+      // show saved confirmation and provide link to form
+      document.getElementById("checkoutDetails").classList.remove("hidden");
+      document.getElementById("savedOrderBox").innerHTML = `<div class="p-2 bg-slate-100 rounded">Order saved. Order ID: <strong>${json.orderId}</strong></div>`;
+      // enable open form button and store orderId on button
+      const formBtn = document.getElementById("openFormBtn");
+      formBtn.disabled = false;
+      formBtn.dataset.orderId = json.orderId;
+      // open the form in new tab (view form URL constructed from form ID)
+      formBtn.onclick = () => {
+        // your public form (view) URL:
+        const formUrl = "https://docs.google.com/forms/d/151aja0bTJXGiW-wN0Peo7nUIIbNLpMyEetKhPOWnscU/viewform";
+        window.open(formUrl, "_blank");
+        alert("Please enter Order ID (" + json.orderId + ") in the form so we can match your payment.");
+      };
+      // clear cart
+      cart = [];
+      renderCart();
+    } else {
+      throw new Error(JSON.stringify(json));
+    }
+  } catch (err) {
+    console.error("saveReservation error", err);
+    alert("Failed to save reservation — check console.");
+  }
+});
+
+document.getElementById("clearCartBtn").addEventListener("click", () => {
+  if (!cart.length) return;
+  if (confirm("Clear cart?")) { cart = []; renderCart(); }
+});
+document.getElementById("closeCheckoutBtn").addEventListener("click", () => {
+  document.getElementById("checkoutDetails").classList.add("hidden");
+});
+
+/////////////////////
+// INIT
+window.addEventListener("DOMContentLoaded", () => {
+  loadInventory();
+  renderCart();
+});
