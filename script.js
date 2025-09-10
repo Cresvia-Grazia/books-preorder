@@ -1,184 +1,190 @@
+// --- CONFIG ---
 const API_URL = "https://script.google.com/macros/s/AKfycbxmDVXy6zQ5aLvJp0MvQ-I0so8Av6CLLrwCxbSl9fsZKJAzlyboyj7qjwEh-vFJyi53wQ/exec";
 
+// Store books and cart
 let books = [];
 let cart = [];
 
-// Fetch books
-async function fetchBooks() {
+// --- FETCH INVENTORY ---
+async function loadBooks() {
   try {
-    const res = await fetch(API_URL);
-    books = await res.json();
-    renderBooks(books);
+    const res = await fetch(`${API_URL}?action=getInventory`);
+    const data = await res.json();
+    books = data;
+    renderBooks();
   } catch (err) {
-    console.error("Error fetching books:", err);
+    console.error("Error loading books", err);
   }
 }
 
-// Render book list
-function renderBooks(list) {
-  const bookList = document.getElementById("bookList");
-  bookList.innerHTML = "";
-  list.forEach(book => {
-    const div = document.createElement("div");
-    div.className = "p-3 border rounded shadow-sm hover:shadow-md transition bg-white";
-    div.innerHTML = `
-      <img src="${book.imageUrl}" alt="${book.title}" class="w-full h-40 object-cover mb-2 rounded">
-      <h3 class="font-semibold text-lg">${book.title}</h3>
-      <p class="text-sm text-gray-600">by ${book.author}</p>
-      <p class="text-xs text-gray-500">${book.genre}</p>
-      <p class="font-bold text-blue-600 mt-1">₱${book.discountedPrice || book.price}</p>
-      <button onclick="addToCart(${book.id})" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded mt-2">Add to Cart</button>
+// --- RENDER BOOK LIST ---
+function renderBooks(filter = "title", value = "") {
+  const list = document.getElementById("bookList");
+  list.innerHTML = "";
+
+  let filteredBooks = books;
+  if (value) {
+    filteredBooks = books.filter(book =>
+      book[filter].toLowerCase().includes(value.toLowerCase())
+    );
+  }
+
+  filteredBooks.forEach((book, i) => {
+    const card = document.createElement("div");
+    card.className = "book-card";
+    card.innerHTML = `
+      <div class="book-title">${book.title}</div>
+      <div class="book-author">by ${book.author}</div>
+      <div class="book-price">₱${book.discountedPrice || book.price}</div>
+      <p class="book-desc">${book.description || ""}</p>
+      <button onclick="addToCart(${i})">Add to Cart</button>
     `;
-    bookList.appendChild(div);
+    list.appendChild(card);
   });
 }
 
-// Add to cart
-function addToCart(bookId) {
-  const book = books.find(b => b.id === bookId);
+// --- CART FUNCTIONS ---
+function addToCart(index) {
+  const book = books[index];
   if (!book) return;
-  const existing = cart.find(item => item.id === bookId);
+
+  const existing = cart.find(item => item.id === index);
   if (existing) {
-    existing.qty += 1;
+    existing.qty++;
   } else {
-    cart.push({ ...book, qty: 1 });
+    cart.push({ id: index, title: book.title, author: book.author, price: book.discountedPrice || book.price, qty: 1 });
   }
   renderCart();
 }
 
-// Render cart
+function updateQty(id, qty) {
+  const item = cart.find(i => i.id === id);
+  if (item) {
+    let q = parseInt(qty) || 1;
+    if (q < 1) q = 1;
+    item.qty = q;
+    renderCart();
+  }
+}
+
+function removeItem(id) {
+  cart = cart.filter(i => i.id !== id);
+  renderCart();
+}
+
+// --- RENDER CART ---
 function renderCart() {
-  const cartItems = document.getElementById("cartItems");
-  cartItems.innerHTML = "";
+  const tbody = document.querySelector("#cartTable tbody");
+  tbody.innerHTML = "";
+
   let total = 0;
-
   cart.forEach((item, i) => {
-    const price = Number(item.discountedPrice || item.price) * item.qty;
-    total += price;
-    cartItems.innerHTML += `
-      <div class="border-b py-2 flex justify-between items-center">
-        <span>${item.title} <span class="text-xs text-gray-500">by ${item.author}</span></span>
-        <div class="flex items-center">
-          <input type="number" min="1" value="${item.qty}" 
-            onchange="updateQty(${i}, this.value)" 
-            class="w-12 p-1 border ml-2 text-center rounded"> 
-          <button onclick="removeFromCart(${i})" class="text-red-600 ml-2">x</button>
-          <span class="ml-4 font-medium">₱${price}</span>
-        </div>
-      </div>
+    const row = document.createElement("tr");
+    const subTotal = item.qty * item.price;
+    total += subTotal;
+
+    row.innerHTML = `
+      <td>${i + 1}</td>
+      <td>${item.title}</td>
+      <td>${item.author}</td>
+      <td><input type="number" min="1" value="${item.qty}" onchange="updateQty(${item.id}, this.value)"></td>
+      <td>₱${subTotal.toFixed(2)}</td>
+      <td><button onclick="removeItem(${item.id})">❌</button></td>
     `;
+    tbody.appendChild(row);
   });
 
-  document.getElementById("cartTotal").textContent = total > 0 ? "Total: ₱" + total : "";
+  document.getElementById("orderTotal").innerHTML = `<strong>Total: ₱${total.toFixed(2)}</strong>`;
 }
 
-// Update quantity
-function updateQty(index, qty) {
-  let q = parseInt(qty) || 1;
-  if (q < 1) q = 1;
-  cart[index].qty = q;
-  renderCart();
-}
-
-// Remove item
-function removeFromCart(index) {
-  cart.splice(index, 1);
-  renderCart();
-}
-
-// Filter books
-document.querySelectorAll("input[name=filterType]").forEach(radio => {
-  radio.addEventListener("change", () => {
-    const type = document.querySelector("input[name=filterType]:checked").value;
-    const inputWrapper = document.getElementById("filterInputWrapper");
-    if (type === "author" || type === "genre") {
-      inputWrapper.innerHTML = `<select id="filterInput" class="w-full p-2 border rounded"></select>`;
-      const options = [...new Set(books.map(b => b[type]))];
-      const select = document.getElementById("filterInput");
-      select.innerHTML = `<option value="">-- All --</option>`;
-      options.forEach(opt => {
-        select.innerHTML += `<option value="${opt}">${opt}</option>`;
-      });
-      select.addEventListener("change", applyFilter);
-    } else {
-      inputWrapper.innerHTML = `<input type="text" id="filterInput" placeholder="Search by ${type}..." class="w-full p-2 border rounded">`;
-      document.getElementById("filterInput").addEventListener("input", applyFilter);
-    }
-  });
+// --- CONFIRM ORDER TOGGLE ---
+document.getElementById("confirmOrderBtn").addEventListener("click", () => {
+  if (cart.length === 0) {
+    alert("Your cart is empty!");
+    return;
+  }
+  document.getElementById("extraDetails").style.display = "block";
+  document.getElementById("confirmOrderBtn").style.display = "none";
 });
 
-function applyFilter() {
-  const type = document.querySelector("input[name=filterType]:checked").value;
-  const val = document.getElementById("filterInput").value.toLowerCase();
-  if (!val) return renderBooks(books);
-  renderBooks(books.filter(b => String(b[type]).toLowerCase().includes(val)));
-}
+// --- PICKUP DATE LOGIC ---
+const pickupSchedule = {
+  "Feast Sacred Heart": "Monday",
+  "Feast IT Park": "Saturday",
+  "Feast Golden Prince": "Saturday",
+  "Feast Ayala": "Sunday"
+};
 
-// Auto-limit pickup date
-document.getElementById("pickup").addEventListener("change", function () {
-  const pickupDate = document.getElementById("pickupDate");
-  pickupDate.value = ""; // reset
+document.getElementById("pickupLocation").addEventListener("change", e => {
+  const location = e.target.value;
+  const allowedDay = pickupSchedule[location];
+  if (!allowedDay) return;
 
-  const dayMap = {
-    "Feast Sacred Heart": 1,   // Monday
-    "Feast IT Park": 6,        // Saturday
-    "Feast Golden Prince": 6,  // Saturday
-    "Feast Ayala": 0           // Sunday
-  };
-
-  const selected = this.value;
-  if (!dayMap[selected]) return;
-
-  const targetDay = dayMap[selected];
   const today = new Date();
-  let date = new Date(today);
+  let nextDate = new Date(today);
 
-  // find next matching weekday
-  while (date.getDay() !== targetDay) {
-    date.setDate(date.getDate() + 1);
+  // find next allowed day
+  while (nextDate.toLocaleDateString("en-US", { weekday: "long" }) !== allowedDay) {
+    nextDate.setDate(nextDate.getDate() + 1);
   }
 
-  // set min/max to allow only that day moving forward
-  pickupDate.min = date.toISOString().split("T")[0];
-  pickupDate.step = 7; // only allow weekly intervals
+  const yyyy = nextDate.getFullYear();
+  const mm = String(nextDate.getMonth() + 1).padStart(2, "0");
+  const dd = String(nextDate.getDate()).padStart(2, "0");
+
+  const pickupDateInput = document.getElementById("pickupDate");
+  pickupDateInput.value = `${yyyy}-${mm}-${dd}`;
+  pickupDateInput.min = `${yyyy}-${mm}-${dd}`;
+  pickupDateInput.max = `${yyyy}-${mm}-${dd}`;
 });
 
-// Submit order
-document.getElementById("orderSubmitForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (cart.length === 0) {
-    alert("Your cart is empty.");
+// --- SUBMIT ORDER ---
+document.getElementById("submitOrderBtn").addEventListener("click", async () => {
+  const fullName = document.getElementById("fullName").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const contact = document.getElementById("contact").value.trim();
+  const fbName = document.getElementById("fbName").value.trim();
+  const pickup = document.getElementById("pickupLocation").value;
+  const date = document.getElementById("pickupDate").value;
+  const paymentProof = document.getElementById("paymentProof").files[0];
+
+  if (!fullName || !email || !contact || !fbName || !pickup || !date || !paymentProof) {
+    alert("Please complete all required fields and upload payment proof.");
     return;
   }
 
+  const total = cart.reduce((sum, item) => sum + item.price * item.qty, 0);
+
   const order = {
-    fullName: document.getElementById("fullName").value,
-    email: document.getElementById("email").value,
-    contactNumber: document.getElementById("contactNumber").value,
-    fbName: document.getElementById("fbName").value,
-    pickup: document.getElementById("pickup").value,
-    pickupDate: document.getElementById("pickupDate").value,
-    items: cart,
-    total: cart.reduce((sum, i) => sum + (Number(i.discountedPrice || i.price) * i.qty), 0),
-    paymentConfirmed: !!document.getElementById("paymentFile").files.length
+    FullName: fullName,
+    Email: email,
+    ContactNumber: contact,
+    FBName: fbName,
+    Pickup: `${pickup} - ${date}`,
+    ItemsJSON: JSON.stringify(cart),
+    Total: total,
+    PaymentConfirmed: "Pending"
   };
 
   try {
-    const res = await fetch(API_URL, {
+    const res = await fetch(`${API_URL}?action=saveOrder`, {
       method: "POST",
       body: JSON.stringify(order),
       headers: { "Content-Type": "application/json" }
     });
+
     const result = await res.json();
-    alert("✅ Order submitted! Reference ID: " + result.orderId);
-    cart = [];
-    renderCart();
-    e.target.reset();
+    if (result.success) {
+      alert("Order submitted successfully!");
+      location.reload();
+    } else {
+      alert("Failed to submit order.");
+    }
   } catch (err) {
-    console.error("Error submitting order:", err);
-    alert("❌ Failed to submit order. Try again later.");
+    console.error(err);
+    alert("Error submitting order.");
   }
 });
 
-// Init
-fetchBooks();
+// --- INIT ---
+loadBooks();
