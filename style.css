@@ -1,24 +1,14 @@
-/* small additions on top of Tailwind styles for the calendar & components */
-
-/* calendar day */
-#calendar {
-  border: 1px solid #e6e6e6;
-  border-radius: 8px;
-  padding: 6px;
-  background: #ffffff;
-}
+/* style.css - small helpers for calendar */
 .calendar-day {
   padding: 8px;
   text-align: center;
   border-radius: 6px;
+  font-size: .85rem;
   cursor: pointer;
-  font-size: 0.85rem;
 }
-.calendar-day:hover { transform: translateY(-2px); }
 .calendar-day.disabled {
-  opacity: 0.28;
+  opacity: .28;
   cursor: not-allowed;
-  transform: none;
 }
 .calendar-day.enabled {
   background: #ecfdf5;
@@ -27,29 +17,8 @@
 .calendar-day.selected {
   background: #0ea5a4;
   color: white;
-  font-weight: 600;
   border: 1px solid #0f766e;
+  font-weight: 600;
 }
-
-/* book card image fix and description clamp */
-.book-image {
-  width: 100%;
-  height: 180px;
-  object-fit: cover;
-  border-radius: 6px;
-}
-.desc-line {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* card utilities */
-.card-warning { background: #fff8e6; border-left: 4px solid #f59e0b; color: #92400e; }
-.card-payment { background: #ecfdf5; border-left: 4px solid #10b981; color: #065f46; }
-
-/* small responsive tweak to avoid overlap */
-@media (min-width: 1024px) {
-  .max-w-5xl { max-width: 960px; }
-}
+.book-image { width:100%; height:180px; object-fit:cover; border-radius:6px; }
+.desc-line { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
