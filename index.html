@@ -1,3 +1,11 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Book Pre-order</title>
+  <link rel="stylesheet" href="style.css">
+</head>
 <body>
   <div class="container">
 
@@ -5,15 +13,15 @@
     <section class="books-panel">
       <h2>📚 Pre-order your next read with us</h2>
 
-      <!-- Filters -->
+      <!-- Filter Controls -->
       <div class="filters">
         <label><input type="radio" name="filter" value="title" checked> Title</label>
         <label><input type="radio" name="filter" value="author"> Author</label>
         <label><input type="radio" name="filter" value="genre"> Genre</label>
-
         <select id="filterDropdown" style="display:none;"></select>
       </div>
 
+      <!-- Books List -->
       <div id="bookList"></div>
     </section>
 
@@ -28,6 +36,7 @@
             <th>Author</th>
             <th>Qty</th>
             <th>Price</th>
+            <th>Remove</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -39,6 +48,7 @@
 
       <!-- Hidden until order confirm -->
       <div id="extraDetails" style="display:none; margin-top:1rem;">
+        <!-- Disclaimer -->
         <div class="disclaimer">
           <p>⚠️ Disclaimer:</p>
           <ul>
@@ -47,18 +57,21 @@
           </ul>
         </div>
 
+        <!-- Payment Info -->
         <h3>💳 Payment</h3>
         <p>GCash / Paymaya</p>
         <p><strong>Account Name:</strong> Cherel</p>
         <p><strong>Account Number:</strong> 09126456792</p>
 
+        <!-- Customer Info -->
         <h3>👤 Customer Information</h3>
-        <label>Full Name: <input type="text" id="fullName"></label>
-        <label>Email Address: <input type="email" id="email"></label>
-        <label>Contact Number: <input type="text" id="contact"></label>
-        <label>FB Name: <input type="text" id="fbName"></label>
-        <label>Payment Confirmation: <input type="file" id="paymentProof"></label>
+        <label>Full Name:<br><input type="text" id="fullName"></label>
+        <label>Email Address:<br><input type="email" id="email"></label>
+        <label>Contact Number:<br><input type="text" id="contact"></label>
+        <label>FB Name:<br><input type="text" id="fbName"></label>
+        <label>Payment Confirmation:<br><input type="file" id="paymentProof"></label>
 
+        <!-- Pickup Info -->
         <h3>📍 Pickup Location</h3>
         <select id="pickupLocation">
           <option value="">Select Location</option>
@@ -68,7 +81,7 @@
           <option value="Feast Ayala">Feast Ayala - Sunday</option>
         </select>
 
-        <label>Date:
+        <label>Date:<br>
           <input type="date" id="pickupDate">
         </label>
 
@@ -82,4 +95,7 @@
     onclick="document.getElementById('orderPanel').scrollIntoView({behavior:'smooth'})">
     🛒 Go to Cart
   </button>
+
+  <script src="script.js"></script>
 </body>
+</html>
