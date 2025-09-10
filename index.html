@@ -5,17 +5,16 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Book Preorder</title>
 
-  <!-- Tailwind for fast styling -->
+  <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body class="bg-slate-50 text-slate-900">
-
   <div class="max-w-6xl mx-auto p-4">
     <header class="mb-4">
       <h1 class="text-2xl font-bold text-sky-700">📚 Book Preorder</h1>
       <p class="text-sm text-slate-600">
-        Browse books below → Add to cart → Confirm → Upload payment slip → Submit order.
+        Browse books → Add to cart → Confirm → Upload slip → Submit order
       </p>
     </header>
 
@@ -24,20 +23,18 @@
       <input id="searchBox" class="p-2 border rounded w-full md:w-2/3" placeholder="Search title, author, or genre" />
       <div class="flex items-center gap-3">
         <div class="text-sm">
-          <label class="mr-2"><input type="radio" name="filterType" value="title" checked> Title</label>
-          <label class="mr-2"><input type="radio" name="filterType" value="author"> Author</label>
-          <label><input type="radio" name="filterType" value="genre"> Genre</label>
+          <label class="mr-2"><input type="radio" name="filterType" value="Title" checked> Title</label>
+          <label class="mr-2"><input type="radio" name="filterType" value="Author"> Author</label>
+          <label><input type="radio" name="filterType" value="Genre"> Genre</label>
         </div>
         <select id="filterDropdown" class="hidden p-2 border rounded"></select>
       </div>
     </div>
 
-    <!-- 📚 BOOK LIST (always first, auto-populated) -->
-    <section id="booksSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-live="polite">
-      <!-- JS will insert book cards here -->
-    </section>
+    <!-- BOOK LIST -->
+    <section id="booksSection" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4" aria-live="polite"></section>
 
-    <!-- 🛒 ORDER AREA -->
+    <!-- ORDER AREA -->
     <section id="orderSection" class="mt-6">
       <div class="bg-white p-4 rounded shadow">
         <div class="flex items-center justify-between mb-2">
@@ -72,58 +69,35 @@
         </div>
       </div>
 
-      <!-- Checkout (revealed after confirm) -->
+      <!-- Checkout (hidden initially) -->
       <div id="checkoutDetails" class="mt-6 hidden">
-        <div class="grid md:grid-cols-2 gap-4">
-          <div class="card-warning p-4 rounded bg-yellow-50 border border-yellow-200">
-            <h3 class="font-semibold mb-2">⚠️ Disclaimer</h3>
-            <ul class="text-sm list-disc pl-5 text-slate-700">
-              <li>Pick-up only — no shipping.</li>
-              <li>For faster transaction please pay first and upload confirmation.</li>
-            </ul>
-          </div>
-
-          <div class="card-payment p-4 rounded bg-sky-50 border border-sky-200">
-            <h3 class="font-semibold mb-2">💳 Payment</h3>
-            <p class="text-sm"><strong>GCash / PayMaya</strong></p>
-            <p class="text-sm"><strong>Account Name:</strong> Cherel</p>
-            <p class="text-sm"><strong>Account Number:</strong> 09126456792</p>
-          </div>
-        </div>
-
-        <form id="checkoutForm" class="mt-4 bg-white p-4 rounded shadow grid gap-3">
+        <form id="checkoutForm" class="bg-white p-4 rounded shadow grid gap-3">
           <div class="grid md:grid-cols-2 gap-3">
             <input id="fullName" placeholder="Full name" class="p-2 border rounded" required />
             <input id="email" type="email" placeholder="Email" class="p-2 border rounded" required />
             <input id="contactNumber" placeholder="Contact number" class="p-2 border rounded" required />
             <input id="fbName" placeholder="Facebook name (optional)" class="p-2 border rounded" />
           </div>
-
-          <div class="grid md:grid-cols-2 gap-3">
-            <label class="block">
-              <span class="text-sm">Upload payment slip (image/pdf)</span>
-              <input id="paymentFile" type="file" accept="image/*,.pdf" class="mt-1 w-full" />
-            </label>
-
-            <label class="block">
-              <span class="text-sm">Pick-up location</span>
-              <select id="pickupLocation" class="mt-1 p-2 border rounded w-full" required>
-                <option value="">Choose location</option>
-                <option value="Feast Sacred Heart">Feast Sacred Heart — Monday</option>
-                <option value="Feast IT Park">Feast IT Park — Saturday</option>
-                <option value="Feast Golden Prince">Feast Golden Prince — Saturday</option>
-                <option value="Feast Ayala">Feast Ayala — Sunday</option>
-              </select>
-            </label>
-          </div>
-
+          <label class="block">
+            <span class="text-sm">Upload payment slip (image/pdf)</span>
+            <input id="paymentFile" type="file" accept="image/*,.pdf" class="mt-1 w-full" />
+          </label>
+          <label class="block">
+            <span class="text-sm">Pick-up location</span>
+            <select id="pickupLocation" class="mt-1 p-2 border rounded w-full" required>
+              <option value="">Choose location</option>
+              <option value="Feast Sacred Heart">Feast Sacred Heart — Monday</option>
+              <option value="Feast IT Park">Feast IT Park — Saturday</option>
+              <option value="Feast Golden Prince">Feast Golden Prince — Saturday</option>
+              <option value="Feast Ayala">Feast Ayala — Sunday</option>
+            </select>
+          </label>
           <div>
-            <span class="text-sm">Pick-up date (click a highlighted date)</span>
+            <span class="text-sm">Pick-up date</span>
             <div id="calendar" class="grid grid-cols-7 gap-1 mt-2"></div>
             <input id="pickupDateIso" type="hidden" />
             <input id="pickupDateDisplay" readonly class="mt-2 p-2 border rounded w-full bg-slate-50" placeholder="No date selected" />
           </div>
-
           <div class="flex gap-2 justify-end">
             <button id="submitOrderBtn" type="button" class="bg-green-600 text-white px-4 py-2 rounded">Submit Order</button>
             <button id="cancelCheckoutBtn" type="button" class="bg-rose-500 text-white px-4 py-2 rounded">Cancel</button>
@@ -133,6 +107,113 @@
     </section>
   </div>
 
-  <script src="script.js"></script>
+<script>
+const API_URL = "https://script.google.com/macros/s/AKfycbwttBqQuHGjCWInJiM8EGzy9jU_ZuQGeLmVxttcH847BVai_dkV8ew0nvFoOKz7DYtIJg/exec"; 
+let allBooks = []
+let cart = []
+
+document.addEventListener("DOMContentLoaded", () => {
+  loadBooks();
+  document.getElementById("searchBox").addEventListener("input", e => filterBooks(e.target.value));
+  document.querySelectorAll("input[name='filterType']").forEach(r => r.addEventListener("change", () => filterBooks(document.getElementById("searchBox").value)));
+  document.getElementById("confirmOrderBtn").addEventListener("click", () => document.getElementById("checkoutDetails").classList.remove("hidden"));
+  document.getElementById("clearCartBtn").addEventListener("click", () => { cart = []; renderCart(); });
+  document.getElementById("pickupLocation").addEventListener("change", handlePickupLocation);
+  document.getElementById("submitOrderBtn").addEventListener("click", handleSubmitOrder);
+  document.getElementById("cancelCheckoutBtn").addEventListener("click", () => document.getElementById("checkoutDetails").classList.add("hidden"));
+});
+
+async function loadBooks() {
+  try {
+    const res = await fetch(`${API_URL}?action=getInventory`);
+    allBooks = await res.json();
+    renderBooks(allBooks);
+  } catch (err) {
+    console.error(err);
+    document.getElementById("booksSection").innerHTML = `<p class="text-red-600">Failed to load inventory.</p>`;
+  }
+}
+
+function renderBooks(books) {
+  const list = document.getElementById("booksSection");
+  list.innerHTML = books.map((b, idx) => `
+    <div class="bg-white p-3 rounded shadow flex flex-col">
+      <img src="${b.ImageURL || 'https://via.placeholder.com/200x180'}" alt="${b.Title}" class="book-image mb-2"/>
+      <h3 class="font-semibold">${b.Title || "Untitled"}</h3>
+      <p class="text-sm text-slate-600">by ${b.Author || "Unknown"}</p>
+      <p class="text-xs text-slate-500">${b.Genre || ""}</p>
+      <p class="font-bold text-sky-700 mt-1">₱${b.DiscountedPrice || b.Price || 0}</p>
+      <button onclick='addToCart(${idx})' class="mt-auto bg-sky-600 text-white px-3 py-1 rounded text-sm">Reserve</button>
+    </div>
+  `).join("");
+}
+
+function filterBooks(query) {
+  const filterType = document.querySelector("input[name='filterType']:checked").value;
+  const filtered = allBooks.filter(b => (b[filterType] || "").toLowerCase().includes(query.toLowerCase()));
+  renderBooks(filtered);
+}
+
+function addToCart(idx) {
+  const book = allBooks[idx];
+  const existing = cart.find(it => it.Title === book.Title);
+  if (existing) existing.qty += 1;
+  else cart.push({ ...book, qty: 1 });
+  renderCart();
+}
+
+function renderCart() {
+  const tbody = document.getElementById("cartTbody");
+  const countEl = document.getElementById("cartCount");
+  const totalEl = document.getElementById("cartTotal");
+  const emptyNotice = document.getElementById("cartEmptyNotice");
+
+  tbody.innerHTML = "";
+  if (!cart.length) {
+    countEl.textContent = "0 items";
+    totalEl.textContent = "Total: ₱0.00";
+    emptyNotice.classList.remove("hidden");
+    document.getElementById("confirmOrderBtn").disabled = true;
+    return;
+  }
+  let total = 0;
+  cart.forEach((it, i) => {
+    const price = it.DiscountedPrice || it.Price || 0;
+    total += price * it.qty;
+    tbody.innerHTML += `
+      <tr>
+        <td class="p-2">${i + 1}</td>
+        <td class="p-2">${it.Title}</td>
+        <td class="p-2">${it.Author}</td>
+        <td class="p-2"><input type="number" min="1" value="${it.qty}" class="w-16 border p-1 text-center" onchange="updateQty(${i}, this.value)" /></td>
+        <td class="p-2">₱${price * it.qty}</td>
+        <td class="p-2"><button class="text-rose-600" onclick="removeFromCart(${i})">✖</button></td>
+      </tr>`;
+  });
+  countEl.textContent = `${cart.length} items`;
+  totalEl.textContent = `Total: ₱${total.toFixed(2)}`;
+  emptyNotice.classList.add("hidden");
+  document.getElementById("confirmOrderBtn").disabled = false;
+}
+
+function updateQty(i, qty) {
+  cart[i].qty = parseInt(qty) || 1;
+  renderCart();
+}
+function removeFromCart(i) {
+  cart.splice(i, 1);
+  renderCart();
+}
+
+function handlePickupLocation(e) {
+  // simplified for now
+  console.log("Pickup selected:", e.target.value);
+}
+
+async function handleSubmitOrder() {
+  if (!cart.length) { alert("Cart is empty!"); return; }
+  alert("Submitting order… (stub)");
+}
+</script>
 </body>
 </html>
